@@ -16,11 +16,11 @@ def gravar(request):
                 form = frmAluno(request.POST)
                 if form.is_valid():
                     form.save()
-                    mensagem = HttpResponse("Aluno Registrado com Sucesso!")
+                    mensagem = criarMensagem("Aluno Registrado com Sucesso!","success")
                     
                     return mensagem
                 else:
-                    mensagem = HttpResponse("Formulário Inválido!")
+                    mensagem = criarMensagem("Aluno já existe!!","danger")
                     return mensagem
     except:
         pass
@@ -36,28 +36,34 @@ def retornarTabela(alunos):
                         </button> \
                     </td> "    
     return tabela
-    
+  
+def criarMensagem(texto, tipo):
+        
+    mensagem = HttpResponse(f"<div id='mensagem' class='alert alert-{tipo}' role='alert' >{texto} </div>")
+    return  mensagem
+
 def recarregarTabela(request):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     print("recarregar",is_ajax)
     alunos = Aluno.retornarNUltimos()
     tabela = retornarTabela(alunos)
-    
-    
     return HttpResponse(tabela)
 
 def buscar(request, nome):
     
-   
     nome = request.GET.get("nome")
     print(nome)
     if len(nome) > 3:
         alunos = Aluno.objects.filter(nome__contains=nome)
         tabela = retornarTabela(alunos)
-        return HttpResponse(tabela)
+        if tabela != '':
+            return HttpResponse(tabela)
+        else:
+            mensagem = criarMensagem("Aluno Não Encontrado", "info")
+            return mensagem
     else:
         return recarregarTabela(request)
-            
+    
 def atualizar(request, rm):
     
     if rm != '':
@@ -67,7 +73,7 @@ def atualizar(request, rm):
         nome = request.POST.get("nome")
         aluno.nome = nome
         aluno.save()
-        return HttpResponse(f"Registro de Aluno Atualizado com Sucesso!!! RM: {rm} - Nome: {nome}")
+        return criarMensagem(f"Registro de Aluno Atualizado com Sucesso!!! RM: {rm} - Nome (Atualizado): {nome}","success")
     else:
         return recarregarTabela(request)
         
