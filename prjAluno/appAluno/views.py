@@ -39,7 +39,7 @@ def retornarTabela(alunos):
   
 def criarMensagem(texto, tipo):
         
-    mensagem = HttpResponse(f"<div id='mensagem' class='alert alert-{tipo}' role='alert' >{texto} </div>")
+    mensagem = HttpResponse(f"<div style='display:block;' id='mensagem' class='alert alert-{tipo}' role='alert' >{texto} </div>")
     return  mensagem
 
 def recarregarTabela(request):
