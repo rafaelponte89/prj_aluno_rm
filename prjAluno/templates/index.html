@@ -90,7 +90,7 @@
 
         //Gravar Aluno
         function sendGravar() {
-            let nome = document.getElementById("id_nome").value;
+            let nome = document.getElementById("id_nome").value.toUpperCase();
             const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
             $.post({
                 url: "{% url 'gravar' %}",
@@ -112,8 +112,7 @@
         }
         // Atualiar Aluno
         function sendAtualizar(rm) {
-        
-            let nome = document.getElementById("id_nome").value;
+            let nome = document.getElementById("id_nome").value.toUpperCase();
             const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
             $.post({
                 url: "{% url 'atualizar' " + rm + "  %}",
@@ -138,7 +137,7 @@
         }
 
         function configurarElementos(response) {
-                      $("#mensagens").html(response);
+                    $("#mensagens").html(response);
                      setTimeout(function(){
                         $("#mensagem").css("display","none");
                     }, 3000);
@@ -157,10 +156,14 @@
                 sendGravar();
                
             }
+        
+                 
+            
         });
 
         $("#id_nome").keyup(() => {
             if ($("#success-outlined").is(":checked")) {
+
                 sendBuscar();
             }
         });

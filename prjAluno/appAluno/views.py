@@ -54,7 +54,7 @@ def buscar(request, nome):
     nome = request.GET.get("nome")
     print(nome)
     if len(nome) > 3:
-        alunos = Aluno.objects.filter(nome__contains=nome)
+        alunos = Aluno.objects.filter(nome__contains=nome)[:10]
         tabela = retornarTabela(alunos)
         if tabela != '':
             return HttpResponse(tabela)
