@@ -127,7 +127,6 @@
                 success: (response) => {
                     configurarElementos(response);
               
-
                 },
                 fail: (response) => {
 
@@ -170,8 +169,7 @@
 
         $("#id_nome").focus().keydown();
 
-     
-        
+    
         $("#success-outlined").change(() => {
            if($("#success-outlined").is(":checked")){
                 alert("checado");
@@ -202,12 +200,10 @@
     });
 
  
-
-    const form = document.getElementById('formulario')
-    form.addEventListener('submit', e => {
-        e.preventDefault()
-    
+    $("#formulario").submit((e) => {
+        e.preventDefault();
     });
+   
     
 </script>
 {% endblock content %}
