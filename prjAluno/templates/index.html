@@ -14,7 +14,7 @@
 </div>
 
 <div class="row mt-2 bg-body-secondary rounded-3">
-    <div class="col-8 p-2">
+    <div class="col-6 p-2">
         <form id="formulario">
             {% csrf_token %}
             {{form.nome}}
@@ -27,6 +27,9 @@
     </div>
     <div class="col-2 d-flex justify-content-center p-2">
         <button id="gravar" class="btn btn-outline-dark">Gravar</button>
+    </div>
+    <div class="col-2 d-flex justify-content-center p-2">
+        <button id="relatorio" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#exampleModal">Relatório</button>
     </div>
    
 </div>
@@ -57,6 +60,37 @@
     </div>
 </div>
 
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Geração do Relatório</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+      <div class="row">
+      <div class="col-12">
+        <input type="number" name="rmi" maxlength="150" class="form-control" 
+        placeholder="RM Inicial" required="" id="id_rmi" min="1">
+        </div>
+        </div>
+        <div class="row mt-2">
+        <div class="col-12">
+         <input type="number" name="rmf" maxlength="150" class="form-control" 
+        placeholder="RM Final" required="" id="id_rmf" min="1">
+        </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+     
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Fechar</button>
+        <button id="baixarpdf" type="button" class="btn btn-primary">Baixar PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <script type="text/javascript">
     $(document).ready(() => {
@@ -73,6 +107,34 @@
                 }
             })
         }
+
+        //Baixar Pdf
+         function sendBaixarPdf(rmi, rmf) {
+            
+            $.get({
+                url: "{% url 'baixarpdf' %}",
+                datatype: 'pdf',
+                data: {
+                    "rmi": rmi,
+                    "rmf": rmf
+                },
+                success: (response) => {
+                  
+                  var blob = new Blob([response], { type: 'application/pdf' });
+
+                if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+                    window.navigator.msSaveOrOpenBlob(blob); // for IE
+                }
+                else {
+                    var fileURL = URL.createObjectURL(blob);
+                    var newWin = window.open(fileURL);
+                    newWin.focus();
+                 
+                }
+                }
+            })
+        }
+
 
         // Recarregar Tabela Estado Inicial
         function recarregarTabela() {
@@ -155,10 +217,9 @@
                 sendGravar();
                
             }
-        
-                 
-            
         });
+
+        $("#baixarpdf").click(() => sendBaixarPdf($("#id_rmi").val(), $("#id_rmf").val()));
 
         $("#id_nome").keyup(() => {
             if ($("#success-outlined").is(":checked")) {
