@@ -9,33 +9,33 @@ from django.db.models import Q
 
 def rodarTeste():
     for i in range(5000):
-        aluno = Aluno(i,"Aluno"+ str(i))
+        aluno = Aluno(i,"NOME "+ str(i) + "SOBRENOME1 "+ str(i) + "SOBRENOME2"+ str(i))
         aluno.save()
         
 # Gravar registro do Aluno
 def gravar(request):
     print("gravar")
-    tamanho = len(request.POST.get("nome"))
+    tamanho = len(request.POST.get("nome").lstrip(' ').rstrip(''))
     try:
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         if is_ajax:
             if request.method == 'POST':
                 form = frmAluno(request.POST)
                 if form.is_valid():
-                    if( tamanho > 3):
-                
-                        form.save()
-                        
-                       
+                    if( tamanho > 3): 
+                        form.save()        
                         mensagem = criarMensagem("Aluno Registrado com Sucesso!","success")
-                        return mensagem
+                        
                     else:
                         mensagem = criarMensagem("Nome muito Pequeno!","warning")
-                        return mensagem
-                        
                 else:
-                    mensagem = criarMensagem("Aluno já existe!!","danger")
-                    return mensagem
+                    if tamanho > 3: 
+                        mensagem = criarMensagem("Aluno já existe!!","danger")
+                    else:
+                        mensagem = criarMensagem("Nome em Branco!!","warning")
+                return mensagem
+                        
+                        
     except:
         pass
     
@@ -66,20 +66,24 @@ def recarregarTabela(request):
 def buscar(request, nome):
     
     nome = request.GET.get("nome")
+    tamanho = len(request.GET.get("nome").lstrip(' ').rstrip(' '))
+    
+
     print(nome)
-    if len(nome) > 3:
+    if (tamanho > 3) :
         alunos = Aluno.objects.filter(nome__contains=nome)[:10]
         tabela = retornarTabela(alunos)
         if tabela != '':
             return HttpResponse(tabela)
         else:
             mensagem = criarMensagem("Aluno Não Encontrado", "info")
+            
             return mensagem
     else:
         return recarregarTabela(request)
     
 def atualizar(request, rm):
-    tamanho = len(request.POST.get("nome"))
+    tamanho = len(request.POST.get("nome").lstrip(' ').rstrip(' '))
     if rm != '':
         if(tamanho > 3):
             rm = int(request.POST.get("rm"))
@@ -88,10 +92,13 @@ def atualizar(request, rm):
             nome = request.POST.get("nome")
             aluno.nome = nome
             aluno.save()
-            return criarMensagem(f"Registro de Aluno Atualizado com Sucesso!!! RM: {rm} - Nome (Atualizado): {nome}","success")
+            mensagem = criarMensagem(f"Registro de Aluno Atualizado com Sucesso!!! RM: {rm} - Nome (Atualizado): {nome}","success")
         else:
-            mensagem = criarMensagem("Nome muito Pequeno!","warning")
-            return mensagem
+            if(tamanho == 0):
+                mensagem = criarMensagem("Nome em Branco!!","warning")
+            else:  
+                mensagem = criarMensagem("Nome muito Pequeno!","warning")
+        return mensagem
     else:
         return recarregarTabela(request)
 
@@ -104,7 +111,7 @@ def gerarIntervalo(rm_inicial, rm_final):
 def index(request):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     print("index",is_ajax)
-    rodarTeste()
+    #rodarTeste()
     context = {
             'alunos': Aluno.retornarNUltimos(),
             'form': frmAluno()
@@ -130,7 +137,7 @@ def baixar_pdf(request):
     alunos = gerarIntervalo(rmi,rmf)
     elements = []
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=18)
+    doc = SimpleDocTemplate(buffer, rightMargin=30, leftMargin=50, topMargin=30, bottomMargin=20)
     
     primeira_linha = ['RM', 'Nome']
     data_alunos = []
@@ -140,15 +147,21 @@ def baixar_pdf(request):
     
     print(data_alunos)
     
-    t_aluno = Table(data_alunos, style= ([('GRID',(0,0),(-1,-1), 0.5, colors.white),
-                            ('LEFTPADDING',(0,0),(-1,-1),2),
-                            ('TOPPADDING',(0,0),(-1,-1),2),
-                            ('BOTTOMPADDING',(0,0),(-1,-1),2),
-                            ('RIGHTPADDING',(0,0),(-1,-1),0),
+    style_table = TableStyle(([('GRID',(0,0),(-1,-1), 0.5, colors.white),
+                            ('LEFTPADDING',(0,0),(-1,-1),6),
+                            ('TOPPADDING',(0,0),(-1,-1),4),
+                            ('BOTTOMPADDING',(0,0),(-1,-1),3),
+                            ('RIGHTPADDING',(0,0),(-1,-1),6),
                             ('ALIGN',(0,0),(-1,-1),'LEFT'),
-                            ]),hAlign='LEFT')
+                             ('ALIGN',(0,0),(0,-1),'CENTER'),
+                            ('BACKGROUND',(0,0),(1,0), colors.lavender),
+                            ('LINEBELOW',(0,0),(-1,-1),1, colors.black),
+                            ('FONTSIZE',(0,0), (-1,-1), 13)
+                            ]))
     
-   
+  
+    t_aluno = Table(data_alunos, style= style_table ,hAlign='LEFT', repeatRows=1)
+    
     elements.append(t_aluno)
     
     doc.build(elements)
