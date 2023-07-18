@@ -7,7 +7,7 @@ from django.db import models
     
 class Aluno (models.Model):
     rm = models.AutoField(primary_key=True)
-    nome = models.CharField(unique=True, max_length=150)
+    nome = models.CharField(max_length=150)
 
     
     def __str__(self):

@@ -23,7 +23,9 @@
     <div class="col-2 d-flex justify-content-center p-2">
         <input type="checkbox" class="btn-check" name="options-outlined" id="success-outlined" value="pesquisa"
             autocomplete="off" checked>
-        <label class="btn btn-outline-success" for="success-outlined">Pesquisa</label>
+        <label class="btn btn-outline-success" for="success-outlined"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+</svg></label>
     </div>
     <div class="col-2 d-flex justify-content-center p-2">
         <button id="gravar" class="btn btn-outline-dark">Gravar</button>
@@ -41,6 +43,7 @@
                 <th>RM</th>
                 <th>Nome</th>
                 <th>Atualizar</th>
+                
             </thead>
             <tbody id="corpoTabela">
                 {% for aluno in alunos %}
@@ -53,6 +56,7 @@
                             <i class="bi bi-arrow-repeat"></i>
                         </button>
                     </td>
+                    
                 </tr>
                 {% endfor %}
             </tbody>
@@ -233,7 +237,7 @@
     
         $("#success-outlined").change(() => {
            if($("#success-outlined").is(":checked")){
-                alert("checado");
+                //alert("checado");
                 let botoes_atualizar = document.getElementsByClassName("atualizar");
 
                 for(let i = 0; i < botoes_atualizar.length; i++){

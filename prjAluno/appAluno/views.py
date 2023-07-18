@@ -4,9 +4,25 @@ from .forms import frmAluno
 from django.contrib import messages
 from django.http import HttpResponse
 from django.db.models import Q
+
 # Create your views here.
-
-
+def buscar_duplicados():
+    alunos = Aluno.objects.all()
+    nomes_rm = {}
+    duplicados = {}
+    
+    for aluno in alunos:
+        
+        if aluno.nome not in nomes_rm.keys():
+            nomes_rm[aluno.nome] = [aluno.rm]
+        else:
+            nomes_rm[aluno.nome].append(aluno.rm)
+    for k, v in nomes_rm.items():
+        if len(v) > 1:
+            duplicados[k] = v
+    print("Total Duplicados: ", len(duplicados))
+    print("\n",duplicados)
+    
 def rodarTeste():
     for i in range(5000):
         aluno = Aluno(i,"NOME "+ str(i) + "SOBRENOME1 "+ str(i) + "SOBRENOME2"+ str(i))
@@ -14,7 +30,7 @@ def rodarTeste():
         
 # Gravar registro do Aluno
 def gravar(request):
-    print("gravar")
+    #print("gravar")
     tamanho = len(request.POST.get("nome").lstrip(' ').rstrip(''))
     try:
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
@@ -23,7 +39,7 @@ def gravar(request):
                 form = frmAluno(request.POST)
                 if form.is_valid():
                     if( tamanho > 3): 
-                        form.save()        
+                        #print(form.save())        
                         mensagem = criarMensagem("Aluno Registrado com Sucesso!","success")
                         
                     else:
@@ -48,7 +64,7 @@ def retornarTabela(alunos):
                         <button type='button' class='btn btn-outline-dark btn-lg atualizar disabled' value="+str(aluno.rm)+"> \
                             <i class='bi bi-arrow-repeat'></i> \
                         </button> \
-                    </td> "    
+                    </td> </tr>"    
     return tabela
   
 def criarMensagem(texto, tipo):
@@ -58,18 +74,15 @@ def criarMensagem(texto, tipo):
 
 def recarregarTabela(request):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    print("recarregar",is_ajax)
+    #print("recarregar",is_ajax)
     alunos = Aluno.retornarNUltimos()
     tabela = retornarTabela(alunos)
     return HttpResponse(tabela)
 
 def buscar(request, nome):
-    
-    nome = request.GET.get("nome")
-    tamanho = len(request.GET.get("nome").lstrip(' ').rstrip(' '))
-    
-
-    print(nome)
+    nome = request.GET.get("nome").upper().rstrip().lstrip()
+    tamanho = len(nome)
+    #print(nome)
     if (tamanho > 3) :
         alunos = Aluno.objects.filter(nome__contains=nome)[:10]
         tabela = retornarTabela(alunos)
@@ -83,13 +96,13 @@ def buscar(request, nome):
         return recarregarTabela(request)
     
 def atualizar(request, rm):
-    tamanho = len(request.POST.get("nome").lstrip(' ').rstrip(' '))
+    nome = request.POST.get("nome").lstrip().rstrip()
+    tamanho = len(nome)
     if rm != '':
         if(tamanho > 3):
             rm = int(request.POST.get("rm"))
-            print(rm)
+            #print(rm)
             aluno = Aluno.objects.get(pk=rm)
-            nome = request.POST.get("nome")
             aluno.nome = nome
             aluno.save()
             mensagem = criarMensagem(f"Registro de Aluno Atualizado com Sucesso!!! RM: {rm} - Nome (Atualizado): {nome}","success")
@@ -105,17 +118,17 @@ def atualizar(request, rm):
 def gerarIntervalo(rm_inicial, rm_final):
     
     alunos = Aluno.objects.filter(Q(rm__gte=rm_inicial) & Q(rm__lte=rm_final))
-
     return alunos
     
 def index(request):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    print("index",is_ajax)
-    #rodarTeste()
+    #print("index",is_ajax)
+    rodarTeste()
     context = {
             'alunos': Aluno.retornarNUltimos(),
             'form': frmAluno()
         }
+    #buscar_duplicados()
     return render(request,'index.html', context)
 
 
@@ -145,7 +158,7 @@ def baixar_pdf(request):
     for i in range(len(alunos)):
         data_alunos.append([alunos[i].rm, alunos[i].nome])
     
-    print(data_alunos)
+    #print(data_alunos)
     
     style_table = TableStyle(([('GRID',(0,0),(-1,-1), 0.5, colors.white),
                             ('LEFTPADDING',(0,0),(-1,-1),6),
