@@ -20,12 +20,15 @@ def buscar_duplicados():
     for k, v in nomes_rm.items():
         if len(v) > 1:
             duplicados[k] = v
-    print("Total Duplicados: ", len(duplicados))
-    print("\n",duplicados)
-    
+    #print("Total Duplicados: ", len(duplicados))
+    #print("\n",duplicados)
+    return duplicados.keys()
+
 def rodarTeste():
+    j = 5000
     for i in range(5000):
-        aluno = Aluno(i,"NOME "+ str(i) + "SOBRENOME1 "+ str(i) + "SOBRENOME2"+ str(i))
+        aluno = Aluno(j,"NOME "+ str(i) + "SOBRENOME1 "+ str(i) + "SOBRENOME2"+ str(i))
+        j += 1
         aluno.save()
         
 # Gravar registro do Aluno
@@ -39,7 +42,8 @@ def gravar(request):
                 form = frmAluno(request.POST)
                 if form.is_valid():
                     if( tamanho > 3): 
-                        #print(form.save())        
+                        #print(form.save()) 
+                        form.save()       
                         mensagem = criarMensagem("Aluno Registrado com Sucesso!","success")
                         
                     else:
@@ -56,15 +60,26 @@ def gravar(request):
         pass
     
 def retornarTabela(alunos):
+    nomes_duplicados = buscar_duplicados()
     tabela = ''
+    icon_exclamacao = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill-exclamation" viewBox="0 0 16 16"> \
+    <path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm-9 8c0 1 1 1 1 1h5.256A4.493 4.493 0 0 1 8 12.5a4.49 4.49 0 0 1 1.544-3.393C9.077 9.038 8.564 9 8 9c-5 0-6 3-6 4Z"/> \
+    <path d="M16 12.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Zm-3.5-2a.5.5 0 0 0-.5.5v1.5a.5.5 0 0 0 1 0V11a.5.5 0 0 0-.5-.5Zm0 4a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Z"/> \
+    </svg>'
     for aluno in alunos:
-        tabela += " <tr><td class='align-middle'>" + str(aluno.rm) + "</td> \
-                    <td class='align-middle'>"+aluno.nome+"</td> \
-                        <td class='text-center conteudoAtualizar'>  \
-                        <button type='button' class='btn btn-outline-dark btn-lg atualizar disabled' value="+str(aluno.rm)+"> \
-                            <i class='bi bi-arrow-repeat'></i> \
+        if aluno.nome in nomes_duplicados:
+            advertencia = '<tr><td class="align-middle">' + str(aluno.rm) + \
+            '<button type="button" class="btn btn-outline-warning m-2" data-bs-toggle="modal"  data-bs-target="#resolucaoDuplicidadeModal">'+icon_exclamacao+'</a></td>'
+        else:
+            advertencia = '<tr><td class="align-middle">' + str(aluno.rm) + '</td>'
+            
+        tabela += ' <tr>' + advertencia + \
+                    '<td class="align-middle">'+aluno.nome+'</td> \
+                        <td class="text-center conteudoAtualizar">  \
+                        <button type="button" class="btn btn-outline-dark btn-lg atualizar disabled"  value='+str(aluno.rm)+'> \
+                            <i class="bi bi-arrow-repeat"></i> \
                         </button> \
-                    </td> </tr>"    
+                    </td> </tr>'    
     return tabela
   
 def criarMensagem(texto, tipo):
@@ -72,6 +87,9 @@ def criarMensagem(texto, tipo):
     mensagem = HttpResponse(f"<div style='display:block;' id='mensagem' class='alert alert-{tipo}' role='alert' >{texto} </div>")
     return  mensagem
 
+
+    
+    
 def recarregarTabela(request):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     #print("recarregar",is_ajax)
@@ -122,15 +140,14 @@ def gerarIntervalo(rm_inicial, rm_final):
     
 def index(request):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+   
     #print("index",is_ajax)
-    rodarTeste()
+    #rodarTeste()
     context = {
-            'alunos': Aluno.retornarNUltimos(),
-            'form': frmAluno()
+            'form': frmAluno(),
         }
-    #buscar_duplicados()
+    
     return render(request,'index.html', context)
-
 
 def baixar_pdf(request):
     import io

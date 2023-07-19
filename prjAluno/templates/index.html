@@ -31,7 +31,7 @@
         <button id="gravar" class="btn btn-outline-dark">Gravar</button>
     </div>
     <div class="col-2 d-flex justify-content-center p-2">
-        <button id="relatorio" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#exampleModal">Relatório</button>
+        <button id="relatorio" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#relatorioModal">Relatório</button>
     </div>
    
 </div>
@@ -46,26 +46,14 @@
                 
             </thead>
             <tbody id="corpoTabela">
-                {% for aluno in alunos %}
-                <tr>
-                    <td class="align-middle">{{aluno.rm}}</td>
-                    <td class="align-middle">{{aluno.nome}}</td>
-                    <td class="text-center">
-                        <button id="botao{{aluno.rm}}" type="button"
-                            class="btn btn-outline-dark btn-lg atualizar disabled" value="{{aluno.rm}}">
-                            <i class="bi bi-arrow-repeat"></i>
-                        </button>
-                    </td>
-                    
-                </tr>
-                {% endfor %}
+               
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- Modal -->
-<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<!-- Modal Relatório -->
+<div class="modal fade" id="relatorioModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -95,9 +83,43 @@
   </div>
 </div>
 
+<!-- Modal Resolução de Duplicidade-->
+<div class="modal fade" id="resolucaoDuplicidadeModal" tabindex="-1" aria-labelledby="resolucaoDuplicidadeModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="resolucaoDuplicidadeModalLabel">Resolução de Conflitos</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+      <div class="row">
+      <div class="col-12">
+        <input type="number" name="rmi" maxlength="150" class="form-control" 
+        placeholder="RM Inicial" required="" id="id_rmi" min="1">
+        </div>
+        </div>
+        <div class="row mt-2">
+        <div class="col-12">
+         <input type="number" name="rmf" maxlength="150" class="form-control" 
+        placeholder="RM Final" required="" id="id_rmf" min="1">
+        </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+     
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Fechar</button>
+        <button id="baixarpdf" type="button" class="btn btn-primary">Resolver</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Fim Modal Resolução de Duplicidade-->
+
+
 
 <script type="text/javascript">
     $(document).ready(() => {
+        recarregarTabela();
         // Pesquisar 
         function sendBuscar() {
             let nome = document.getElementById("id_nome").value;
@@ -138,7 +160,6 @@
                 }
             })
         }
-
 
         // Recarregar Tabela Estado Inicial
         function recarregarTabela() {
