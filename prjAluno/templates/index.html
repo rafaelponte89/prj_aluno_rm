@@ -38,7 +38,7 @@
 
 <div class="row mt-3">
     <div class="col-12">
-        <table id="tabela" class="table table-hover table-responsive table-bordered table-primary">
+        <table id="tabela" class="table table-hover table-responsive table-bordered table-success">
             <thead>
                 <th>RM</th>
                 <th>Nome</th>
@@ -88,27 +88,17 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="resolucaoDuplicidadeModalLabel">Resolução de Conflitos</h5>
+        <h5 class="modal-title" id="resolucaoDuplicidadeModalLabel">Deseja Cancelar este Registro?</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-      <div class="row">
-      <div class="col-12">
-        <input type="number" name="rmi" maxlength="150" class="form-control" 
-        placeholder="RM Inicial" required="" id="id_rmi" min="1">
-        </div>
-        </div>
-        <div class="row mt-2">
-        <div class="col-12">
-         <input type="number" name="rmf" maxlength="150" class="form-control" 
-        placeholder="RM Final" required="" id="id_rmf" min="1">
-        </div>
-        </div>
+      <div id="identificador" class="row">
+        <!-- Dados do Registro Aqui -->
       </div>
       <div class="modal-footer">
      
-        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Fechar</button>
-        <button id="baixarpdf" type="button" class="btn btn-primary">Resolver</button>
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Não</button>
+        <button id="simCancelar" type="button" class="btn btn-primary" data-bs-dismiss="modal">Sim</button>
       </div>
     </div>
   </div>
@@ -118,6 +108,7 @@
 
 
 <script type="text/javascript">
+
     $(document).ready(() => {
         recarregarTabela();
         // Pesquisar 
@@ -130,9 +121,25 @@
                 },
                 success: (response) => {
                     $("#corpoTabela").html(response);
+                    let advertencias = document.getElementsByClassName("advertencia");
+                     for(let i = 0; i < advertencias.length; i++) {
+                         advertencias[i].addEventListener("click", function(){
+                             buscarAluno(advertencias[i].value);
+                         });
+                     }
+                     
+                    
+                   
                 }
             })
         }
+
+        $("#id_nome").keyup(() => {
+            if ($("#success-outlined").is(":checked")) {
+
+                sendBuscar();
+            }
+        });
 
         //Baixar Pdf
          function sendBaixarPdf(rmi, rmf) {
@@ -168,13 +175,19 @@
                 success: (response) => {
 
                     $("#corpoTabela").html(response);
+                     let advertencias = document.getElementsByClassName("advertencia");
+                     for(let i = 0; i < advertencias.length; i++) {
+                         advertencias[i].addEventListener("click", function(){
+                             buscarAluno(advertencias[i].value);
+                         });
+                     }
                 },
                 fail: (response) => {
 
                 }
             })
         }
-
+    
         //Gravar Aluno
         function sendGravar() {
             let nome = document.getElementById("id_nome").value.toUpperCase();
@@ -197,7 +210,7 @@
                 }
             })
         }
-        // Atualiar Aluno
+        // Atualizar Aluno
         function sendAtualizar(rm) {
             let nome = document.getElementById("id_nome").value.toUpperCase();
             const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -222,6 +235,58 @@
             }) 
         }
 
+
+        //Testando buscar aluno por rm
+        function buscarAluno(rm) {
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+             $.post({
+                url: "{% url 'buscarRM' "+rm+"   %}",
+
+                headers: {
+                    'X-CSRFToken': csrftoken
+                },
+                data: {
+                    "rm": rm
+                },
+                success: (response) => {
+                    $("#identificador").html(response)
+                   
+                    
+                },
+                fail: (response) => {
+                }
+            }) 
+        }
+
+        
+         // Testando Cancelar RM
+        function sendCancelar(rm) {
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            $.post({
+                url: "{% url 'cancelarRM' " + rm + "  %}",
+
+                headers: {
+                    'X-CSRFToken': csrftoken
+                },
+                data: {
+                    "rm": rm
+                },
+                success: (response) => {
+                    configurarElementos(response);
+              
+                },
+                fail: (response) => {
+                }
+            }) 
+        }
+
+         $("#simCancelar").click(()=>{
+                        //console.log($("#registroAluno").text())
+                    
+                       sendCancelar($("#registroAluno").text());
+                    });
+
         function configurarElementos(response) {
                     $("#mensagens").html(response);
                      setTimeout(function(){
@@ -232,9 +297,11 @@
                     $("#success-outlined").prop('checked', true);
                     $("#id_nome").prop("value",'');
                     recarregarTabela();
+         
         }
 
         $("#gravar").click(() => sendGravar());
+       
 
         $("#id_nome").keypress((event) => {
             let tecla = event.which;
@@ -246,16 +313,11 @@
 
         $("#baixarpdf").click(() => sendBaixarPdf($("#id_rmi").val(), $("#id_rmf").val()));
 
-        $("#id_nome").keyup(() => {
-            if ($("#success-outlined").is(":checked")) {
-
-                sendBuscar();
-            }
-        });
+       
 
         $("#id_nome").focus().keydown();
 
-    
+        
         $("#success-outlined").change(() => {
            if($("#success-outlined").is(":checked")){
                 //alert("checado");
@@ -283,9 +345,15 @@
             
 
         });
+
+       
+
+
+       
     });
 
- 
+
+     
     $("#formulario").submit((e) => {
         e.preventDefault();
     });

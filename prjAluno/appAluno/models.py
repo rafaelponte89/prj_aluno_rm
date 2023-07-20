@@ -8,6 +8,7 @@ from django.db import models
 class Aluno (models.Model):
     rm = models.AutoField(primary_key=True)
     nome = models.CharField(max_length=150)
+    cancelado = models.BooleanField(default=False)
 
     
     def __str__(self):
@@ -23,6 +24,8 @@ class Aluno (models.Model):
     def retornarNUltimos(n=5):
         alunos = Aluno.objects.order_by('-rm')[:n]
         return alunos
+    
+    
     
     
     

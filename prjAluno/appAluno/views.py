@@ -5,23 +5,29 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.db.models import Q
 
+
+        
+    
 # Create your views here.
-def buscar_duplicados():
-    alunos = Aluno.objects.all()
+def buscar_duplicados(alunos):
+   
     nomes_rm = {}
     duplicados = {}
-    
     for aluno in alunos:
         
-        if aluno.nome not in nomes_rm.keys():
-            nomes_rm[aluno.nome] = [aluno.rm]
-        else:
-            nomes_rm[aluno.nome].append(aluno.rm)
+        if aluno.cancelado != True:
+            if aluno.nome not in nomes_rm.keys():
+                nomes_rm[aluno.nome] = [aluno.rm]
+            else:
+                nomes_rm[aluno.nome].append(aluno.rm)
+   
     for k, v in nomes_rm.items():
         if len(v) > 1:
             duplicados[k] = v
+            
+    
     #print("Total Duplicados: ", len(duplicados))
-    #print("\n",duplicados)
+    print("\n",duplicados)
     return duplicados.keys()
 
 def rodarTeste():
@@ -59,59 +65,94 @@ def gravar(request):
     except:
         pass
     
-def retornarTabela(alunos):
-    nomes_duplicados = buscar_duplicados()
+def atualizarTabela(alunos):
+    nomes_duplicados = buscar_duplicados(alunos)
     tabela = ''
-    icon_exclamacao = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill-exclamation" viewBox="0 0 16 16"> \
-    <path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm-9 8c0 1 1 1 1 1h5.256A4.493 4.493 0 0 1 8 12.5a4.49 4.49 0 0 1 1.544-3.393C9.077 9.038 8.564 9 8 9c-5 0-6 3-6 4Z"/> \
-    <path d="M16 12.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Zm-3.5-2a.5.5 0 0 0-.5.5v1.5a.5.5 0 0 0 1 0V11a.5.5 0 0 0-.5-.5Zm0 4a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Z"/> \
-    </svg>'
+    print("Duplicados",nomes_duplicados)
+    
     for aluno in alunos:
-        if aluno.nome in nomes_duplicados:
-            advertencia = '<tr><td class="align-middle">' + str(aluno.rm) + \
-            '<button type="button" class="btn btn-outline-warning m-2" data-bs-toggle="modal"  data-bs-target="#resolucaoDuplicidadeModal">'+icon_exclamacao+'</a></td>'
-        else:
-            advertencia = '<tr><td class="align-middle">' + str(aluno.rm) + '</td>'
+        if aluno.cancelado:
+            status_rm = '<tr><td class="align-middle">' + str(aluno.rm) + '</td>'
             
-        tabela += ' <tr>' + advertencia + \
-                    '<td class="align-middle">'+aluno.nome+'</td> \
-                        <td class="text-center conteudoAtualizar">  \
-                        <button type="button" class="btn btn-outline-dark btn-lg atualizar disabled"  value='+str(aluno.rm)+'> \
+            botao = '<button type="button" class="btn btn-outline-danger btn-lg  disabled"  value='+str(aluno.rm)+'> \
+                            <i class="bi bi-x-circle-fill"></i> \
+                        </button>' 
+            
+        else:
+            if aluno.nome in nomes_duplicados:
+                status_rm = '<tr><td class="align-middle">' + str(aluno.rm) + \
+                '<button "type="button" class="btn btn-outline-primary m-2 advertencia" value='+str(aluno.rm)+' data-bs-toggle="modal" data-bs-target="#resolucaoDuplicidadeModal" ><i class="bi bi-person-fill-exclamation"></i></button></a></td>'
+                botao = '<button type="button" class="btn btn-outline-dark btn-lg atualizar disabled"  value='+str(aluno.rm)+'> \
                             <i class="bi bi-arrow-repeat"></i> \
-                        </button> \
-                    </td> </tr>'    
-    return tabela
+                        </button>'
+            else:
+                status_rm = '<tr><td class="align-middle">' + str(aluno.rm) + '</td>'
+                botao = '<button type="button" class="btn btn-outline-dark btn-lg atualizar disabled"  value='+str(aluno.rm)+'> \
+                            <i class="bi bi-arrow-repeat"></i> \
+                        </button>'
+                
+                             
+            
+        tabela += ' <tr>' + status_rm + \
+                    '<td class="align-middle">'+aluno.nome+'</td> \
+                        <td class="text-center conteudoAtualizar">' \
+                        +botao+ \
+                    '</td> </tr>'    
+                    
+                    
+    #print("Atualizar Tabela", tabela)
+    return HttpResponse(tabela)
   
 def criarMensagem(texto, tipo):
         
     mensagem = HttpResponse(f"<div style='display:block;' id='mensagem' class='alert alert-{tipo}' role='alert' >{texto} </div>")
     return  mensagem
 
-
+def cancelarRM(request, rm):
+    rm_req = int(request.POST.get('rm'))
+    aluno = Aluno.objects.get(pk=rm_req)
+    aluno.cancelado = True
+    aluno.save()
+    return criarMensagem(f"{aluno.nome} - {aluno.rm} : Cancelado!!!","success")
+    
+    
     
     
 def recarregarTabela(request):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     #print("recarregar",is_ajax)
     alunos = Aluno.retornarNUltimos()
-    tabela = retornarTabela(alunos)
-    return HttpResponse(tabela)
+    tabela = atualizarTabela(alunos)
+    return tabela
 
 def buscar(request, nome):
     nome = request.GET.get("nome").upper().rstrip().lstrip()
     tamanho = len(nome)
-    #print(nome)
+    print(nome)
     if (tamanho > 3) :
         alunos = Aluno.objects.filter(nome__contains=nome)[:10]
-        tabela = retornarTabela(alunos)
-        if tabela != '':
-            return HttpResponse(tabela)
+        buscar_duplicados(alunos)
+        tabela = atualizarTabela(alunos)
+        
+        
+        if len(tabela.content)>0:
+           
+            return tabela
         else:
             mensagem = criarMensagem("Aluno Não Encontrado", "info")
             
             return mensagem
     else:
         return recarregarTabela(request)
+    
+def buscarRM(request,rm):
+    rm = request.POST.get('rm')
+    print("RM", rm)
+    aluno = Aluno.objects.get(pk=rm)
+    dados = f'<div class="col-12"> <p class="text-white bg-dark" > RM: <span id="registroAluno">{aluno.rm} </span> </p> <p class="text-white bg-dark"> Nome: {aluno.nome} </p>  </div>'
+    return HttpResponse(dados)
+    
+    
     
 def atualizar(request, rm):
     nome = request.POST.get("nome").lstrip().rstrip()
