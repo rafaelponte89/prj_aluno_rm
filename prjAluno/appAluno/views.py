@@ -25,14 +25,11 @@ def buscar_duplicados(alunos):
         if len(v) > 1:
             duplicados[k] = v
             
-    
-    #print("Total Duplicados: ", len(duplicados))
-    print("\n",duplicados)
     return duplicados.keys()
 
 def rodarTeste():
-    j = 5000
-    for i in range(5000):
+    j = 0
+    for i in range(4999):
         aluno = Aluno(j,"NOME "+ str(i) + "SOBRENOME1 "+ str(i) + "SOBRENOME2"+ str(i))
         j += 1
         aluno.save()
@@ -77,7 +74,6 @@ def atualizarTabela(alunos):
             botao = '<button type="button" class="btn btn-outline-danger btn-lg  disabled"  value='+str(aluno.rm)+'> \
                             <i class="bi bi-x-circle-fill"></i> \
                         </button>' 
-            
         else:
             if aluno.nome in nomes_duplicados:
                 status_rm = '<tr><td class="align-middle">' + str(aluno.rm) + \
@@ -114,10 +110,7 @@ def cancelarRM(request, rm):
     aluno.cancelado = True
     aluno.save()
     return criarMensagem(f"{aluno.nome} - {aluno.rm} : Cancelado!!!","success")
-    
-    
-    
-    
+       
 def recarregarTabela(request):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     #print("recarregar",is_ajax)
@@ -151,9 +144,7 @@ def buscarRM(request,rm):
     aluno = Aluno.objects.get(pk=rm)
     dados = f'<div class="col-12"> <p class="text-white bg-dark" > RM: <span id="registroAluno">{aluno.rm} </span> </p> <p class="text-white bg-dark"> Nome: {aluno.nome} </p>  </div>'
     return HttpResponse(dados)
-    
-    
-    
+       
 def atualizar(request, rm):
     nome = request.POST.get("nome").lstrip().rstrip()
     tamanho = len(nome)
@@ -183,7 +174,7 @@ def index(request):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
    
     #print("index",is_ajax)
-    #rodarTeste()
+    rodarTeste()
     context = {
             'form': frmAluno(),
         }
@@ -213,9 +204,15 @@ def baixar_pdf(request):
     primeira_linha = ['RM', 'Nome']
     data_alunos = []
     data_alunos.append(primeira_linha)
-    for i in range(len(alunos)):
-        data_alunos.append([alunos[i].rm, alunos[i].nome])
+    stylesheet = getSampleStyleSheet()
+    normalStyle = stylesheet['BodyText']
     
+    for i in range(len(alunos)):
+        if alunos[i].cancelado:
+            data_alunos.append([Paragraph(f'<para align=center><strike>{alunos[i].rm}</strike></para>',normalStyle), Paragraph(f'<strike>{alunos[i].nome}</strike>')])
+        else:
+            data_alunos.append([Paragraph(f'<para align=center>{alunos[i].rm}</para>',normalStyle), Paragraph(f'{alunos[i].nome}')])
+        
     #print(data_alunos)
     
     style_table = TableStyle(([('GRID',(0,0),(-1,-1), 0.5, colors.white),
@@ -231,7 +228,8 @@ def baixar_pdf(request):
                             ]))
     
   
-    t_aluno = Table(data_alunos, style= style_table ,hAlign='LEFT', repeatRows=1)
+    t_aluno = Table(data_alunos, style= style_table ,hAlign='LEFT', repeatRows=1, colWidths=[60,450])
+    
     
     elements.append(t_aluno)
     
