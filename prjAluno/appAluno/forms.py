@@ -7,7 +7,8 @@ class frmAluno(forms.ModelForm):
     nome.widget.attrs["class"] = "form-control"
     nome.widget.attrs["placeholder"] = "Nome do Aluno"
     
-    
+    def __str__(self):
+        return self.nome
     
     class Meta:
         model = Aluno

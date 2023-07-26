@@ -11,6 +11,8 @@ class Aluno (models.Model):
     cancelado = models.BooleanField(default=False)
 
     
+
+        
     def __str__(self):
        
         return f'[{self.rm}] {self.nome}'

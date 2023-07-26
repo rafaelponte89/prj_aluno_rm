@@ -114,10 +114,15 @@
         // Pesquisar 
         function sendBuscar() {
             let nome = document.getElementById("id_nome").value;
-            $.get({
-                url: "{% url 'buscar' " + nome + " %}",
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            $.post({
+                url: "{% url 'buscar' %}",
                 data: {
                     "nome": nome,
+                },
+                  headers: {
+                    'X-CSRFToken': csrftoken
                 },
                 success: (response) => {
                     $("#corpoTabela").html(response);
@@ -143,17 +148,20 @@
 
         //Baixar Pdf
          function sendBaixarPdf(rmi, rmf) {
-            
-            $.get({
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            $.post({
                 url: "{% url 'baixarpdf' %}",
-                datatype: 'pdf',
+               // datatype: 'pdf',
                 data: {
                     "rmi": rmi,
                     "rmf": rmf
                 },
+                  headers: {
+                    'X-CSRFToken': csrftoken
+                },
                 success: (response) => {
                   
-                  var blob = new Blob([response], { type: 'application/pdf' });
+                var blob = new Blob([response], { type: 'application/pdf' });
 
                 if (window.navigator && window.navigator.msSaveOrOpenBlob) {
                     window.navigator.msSaveOrOpenBlob(blob); // for IE
@@ -164,6 +172,7 @@
                     newWin.focus();
                  
                 }
+                
                 }
             })
         }
@@ -215,7 +224,7 @@
             let nome = document.getElementById("id_nome").value.toUpperCase();
             const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
             $.post({
-                url: "{% url 'atualizar' " + rm + "  %}",
+                url: "{% url 'atualizar' %}",
 
                 headers: {
                     'X-CSRFToken': csrftoken
@@ -241,7 +250,7 @@
             const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
              $.post({
-                url: "{% url 'buscarRM' "+rm+"   %}",
+                url: "{% url 'buscarRM' %}",
 
                 headers: {
                     'X-CSRFToken': csrftoken
@@ -264,7 +273,7 @@
         function sendCancelar(rm) {
             const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
             $.post({
-                url: "{% url 'cancelarRM' " + rm + "  %}",
+                url: "{% url 'cancelarRM' %}",
 
                 headers: {
                     'X-CSRFToken': csrftoken

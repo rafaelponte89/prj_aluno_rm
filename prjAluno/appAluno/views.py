@@ -5,21 +5,49 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.db.models import Q
 
+import io
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+from datetime import datetime
+
 
         
     
 # Create your views here.
+def padronizar_nome(nome):
+    acentuados = {'Á':'A','Ã':'A','Â':'A','É':'E','Ê':'E','Í':'I','Î':'I','Ó':'O','Õ':'O','Ô':'O','Ú':'U','Û':'U'}   
+    letra_nova = ''
+    for letra in nome:
+        if letra in acentuados.keys():
+            letra_nova = acentuados[letra]
+            nome = nome.replace(letra,letra_nova)
+    return nome
+
+def padronizar_nomes(alunos):
+    acentuados = {'Á':'A','Ã':'A','Â':'A','É':'E','Ê':'E','Í':'I','Î':'I','Ó':'O','Õ':'O','Ô':'O','Ú':'U','Û':'U'}   
+    letra_nova = ''
+    for aluno in alunos:
+        for letra in aluno.nome:
+            if letra in acentuados.keys():
+                letra_nova = acentuados[letra]
+                aluno.nome = aluno.nome.replace(letra,letra_nova)
+                print(aluno.nome)
+                aluno.save()
+    
+            
 def buscar_duplicados(alunos):
    
     nomes_rm = {}
     duplicados = {}
     for aluno in alunos:
-        
+        nome = aluno.nome.rstrip().lstrip().upper()
+       
         if aluno.cancelado != True:
-            if aluno.nome not in nomes_rm.keys():
-                nomes_rm[aluno.nome] = [aluno.rm]
+            if nome not in nomes_rm.keys():
+                nomes_rm[nome] = [aluno.rm]
             else:
-                nomes_rm[aluno.nome].append(aluno.rm)
+                nomes_rm[nome].append(aluno.rm)
    
     for k, v in nomes_rm.items():
         if len(v) > 1:
@@ -34,19 +62,29 @@ def rodarTeste():
         j += 1
         aluno.save()
         
+def testePadronizaNome():
+    alunos = Aluno.objects.all()
+    
+    padronizar_nomes(alunos)
+        
 # Gravar registro do Aluno
 def gravar(request):
     #print("gravar")
-    tamanho = len(request.POST.get("nome").lstrip(' ').rstrip(''))
+    nome = request.POST.get("nome").lstrip(' ').rstrip('')
+    tamanho = len(nome)
+
     try:
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         if is_ajax:
             if request.method == 'POST':
-                form = frmAluno(request.POST)
+                form = frmAluno({"nome":padronizar_nome(nome)})
                 if form.is_valid():
                     if( tamanho > 3): 
-                        #print(form.save()) 
-                        form.save()       
+                         
+                        print('formulario',form["nome"])
+                        form.save() 
+                        #print('nome',padronizar_nome(request.POST.get("nome").lstrip(' ').rstrip('')))
+      
                         mensagem = criarMensagem("Aluno Registrado com Sucesso!","success")
                         
                     else:
@@ -59,8 +97,8 @@ def gravar(request):
                 return mensagem
                         
                         
-    except:
-        pass
+    except Exception as err:
+        print(err)
     
 def atualizarTabela(alunos):
     nomes_duplicados = buscar_duplicados(alunos)
@@ -68,6 +106,7 @@ def atualizarTabela(alunos):
     print("Duplicados",nomes_duplicados)
     
     for aluno in alunos:
+        nome = aluno.nome.rstrip().lstrip().upper()
         if aluno.cancelado:
             status_rm = '<tr><td class="align-middle">' + str(aluno.rm) + '</td>'
             
@@ -75,7 +114,7 @@ def atualizarTabela(alunos):
                             <i class="bi bi-x-circle-fill"></i> \
                         </button>' 
         else:
-            if aluno.nome in nomes_duplicados:
+            if nome in nomes_duplicados:
                 status_rm = '<tr><td class="align-middle">' + str(aluno.rm) + \
                 '<button "type="button" class="btn btn-outline-primary m-2 advertencia" value='+str(aluno.rm)+' data-bs-toggle="modal" data-bs-target="#resolucaoDuplicidadeModal" ><i class="bi bi-person-fill-exclamation"></i></button></a></td>'
                 botao = '<button type="button" class="btn btn-outline-dark btn-lg atualizar disabled"  value='+str(aluno.rm)+'> \
@@ -104,7 +143,7 @@ def criarMensagem(texto, tipo):
     mensagem = HttpResponse(f"<div style='display:block;' id='mensagem' class='alert alert-{tipo}' role='alert' >{texto} </div>")
     return  mensagem
 
-def cancelarRM(request, rm):
+def cancelarRM(request):
     rm_req = int(request.POST.get('rm'))
     aluno = Aluno.objects.get(pk=rm_req)
     aluno.cancelado = True
@@ -118,8 +157,8 @@ def recarregarTabela(request):
     tabela = atualizarTabela(alunos)
     return tabela
 
-def buscar(request, nome):
-    nome = request.GET.get("nome").upper().rstrip().lstrip()
+def buscar(request):
+    nome = request.POST.get("nome").upper().rstrip().lstrip()
     tamanho = len(nome)
     print(nome)
     if (tamanho > 3) :
@@ -138,15 +177,16 @@ def buscar(request, nome):
     else:
         return recarregarTabela(request)
     
-def buscarRM(request,rm):
+def buscarRM(request):
     rm = request.POST.get('rm')
     print("RM", rm)
     aluno = Aluno.objects.get(pk=rm)
     dados = f'<div class="col-12"> <p class="text-white bg-dark" > RM: <span id="registroAluno">{aluno.rm} </span> </p> <p class="text-white bg-dark"> Nome: {aluno.nome} </p>  </div>'
     return HttpResponse(dados)
        
-def atualizar(request, rm):
-    nome = request.POST.get("nome").lstrip().rstrip()
+def atualizar(request):
+    nome = padronizar_nome(request.POST.get("nome").lstrip().rstrip())
+    rm = int(request.POST.get("rm"))
     tamanho = len(nome)
     if rm != '':
         if(tamanho > 3):
@@ -174,22 +214,17 @@ def index(request):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
    
     #print("index",is_ajax)
-    rodarTeste()
+    #rodarTeste()
     context = {
             'form': frmAluno(),
         }
-    
+    testePadronizaNome()
     return render(request,'index.html', context)
 
 def baixar_pdf(request):
-    import io
-    from reportlab.lib import colors
-    from reportlab.lib.pagesizes import A4, landscape
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from datetime import datetime
-    rmi = int(request.GET.get("rmi"))
-    rmf = int(request.GET.get("rmf"))
+   
+    rmi = int(request.POST.get("rmi"))
+    rmf = int(request.POST.get("rmf"))
     maior = ''
     if rmi > rmf:
         maior = rmi
@@ -209,9 +244,9 @@ def baixar_pdf(request):
     
     for i in range(len(alunos)):
         if alunos[i].cancelado:
-            data_alunos.append([Paragraph(f'<para align=center><strike>{alunos[i].rm}</strike></para>',normalStyle), Paragraph(f'<strike>{alunos[i].nome}</strike>')])
+            data_alunos.append([Paragraph(f'<para align=center size=12><strike>{alunos[i].rm}</strike></para>',normalStyle), Paragraph(f'<para size=12><strike>{alunos[i].nome}</strike></para>')])
         else:
-            data_alunos.append([Paragraph(f'<para align=center>{alunos[i].rm}</para>',normalStyle), Paragraph(f'{alunos[i].nome}')])
+            data_alunos.append([Paragraph(f'<para align=center size=12>{alunos[i].rm}</para>',normalStyle), Paragraph(f'<para size=12>{alunos[i].nome}</para>')])
         
     #print(data_alunos)
     
@@ -239,5 +274,6 @@ def baixar_pdf(request):
     response['Content-Disposition'] = f'attachment; filename={nome_arquivo}.pdf'
     response.write(buffer.getvalue())
     buffer.close()
+    
 
     return response
