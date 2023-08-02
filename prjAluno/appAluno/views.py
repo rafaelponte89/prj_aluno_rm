@@ -6,15 +6,85 @@ from django.http import HttpResponse
 from django.db.models import Q
 
 import io
+from pathlib import Path
+from os import path
+import os.path
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 from datetime import datetime
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.http import HttpError
+from googleapiclient.http import MediaFileUpload
+import os
+from datetime import datetime
+
+# Create your views here.
+
+def criar_log(texto,mensagem):
+    with open('log_backup.txt','a') as bkp_log:
+        bkp_log.write((datetime.now().strftime('%d/%m/%Y - %H:%M:%S') + ' Status: ' + mensagem + ' Descricao: ' + texto + '\n'))
+
+def realizar_backup(request):
+    SCOPES =["https://www.googleapis.com/auth/drive"]
+    creds = None
+    if os.path.exists("token.json"):
+        creds = Credentials.from_authorized_user_file("token.json",SCOPES)
+    
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
+            creds = flow.run_local_server(port=0)
+            
+        with open('token.json','w') as token:
+            token.write(creds.to_json())
+    try:
+        service = build("drive","v3", credentials=creds)
+        
+        response = service.files().list(
+            q = "name='BkpRegistroAlunosVictoria' and mimeType='application/vnd.google-apps.folder'",
+            spaces='drive'
+        ).execute()
+        
+        if not response['files']:
+            file_metadata = {
+                "name": "BkpRegistroAlunosVictoria",
+                "mimeType": "application/vnd.google-apps.folder"
+            }
+            
+            file = service.files().create(body=file_metadata, fields="id").execute()
+            
+            folder_id = file.get('id')
+        else:
+            folder_id = response['files'][0]['id']
+            
+       
+        for file in os.listdir('bd'):
+            file_metadata = {
+                "name": file,
+                "parents": [folder_id]
+            }
+
+            
+            media = MediaFileUpload(f"bd/{file}")
+            upload_file = service.files().create(body=file_metadata, media_body=media, fields="id").execute()
+            print("Upload arquivo: " + file)
+            criar_log("Upload " + file,"Sucesso")
+        return criarMensagem(f"Backup Efetuado na Nuvem!!! Arquivo: {file}", "info")
+    except HttpError as e:
+       criar_log(str(e), "Falha")
+       print("Error: " + str(e))
+       return criarMensagem("Falha no Backup!!!", "danger")
 
 
         
     
-# Create your views here.
+
 def padronizar_nome(nome):
     acentuados = {'Á':'A','Ã':'A','Â':'A','É':'E','Ê':'E','Í':'I','Î':'I','Ó':'O','Õ':'O','Ô':'O','Ú':'U','Û':'U'}   
     letra_nova = ''
@@ -110,7 +180,7 @@ def atualizarTabela(alunos):
         if aluno.cancelado:
             status_rm = '<tr><td class="align-middle">' + str(aluno.rm) + '</td>'
             
-            botao = '<button type="button" class="btn btn-outline-danger btn-lg  disabled"  value='+str(aluno.rm)+'> \
+            botao = '<button type="button" class="btn btn-outline-danger btn-lg  disabled" aria-label="cancelar'+str(aluno.nome)+  '" value='+str(aluno.rm)+'> \
                             <i class="bi bi-x-circle-fill"></i> \
                         </button>' 
         else:
@@ -122,7 +192,7 @@ def atualizarTabela(alunos):
                         </button>'
             else:
                 status_rm = '<tr><td class="align-middle">' + str(aluno.rm) + '</td>'
-                botao = '<button type="button" class="btn btn-outline-dark btn-lg atualizar disabled"  value='+str(aluno.rm)+'> \
+                botao = '<button type="button" class="btn btn-outline-dark btn-lg atualizar disabled" aria-label=atualizar'+str(aluno.nome)+'  value='+str(aluno.rm)+'> \
                             <i class="bi bi-arrow-repeat"></i> \
                         </button>'
                 
@@ -219,6 +289,8 @@ def index(request):
             'form': frmAluno(),
         }
     testePadronizaNome()
+   
+   
     return render(request,'index.html', context)
 
 def baixar_pdf(request):

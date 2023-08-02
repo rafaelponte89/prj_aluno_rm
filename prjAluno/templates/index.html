@@ -9,31 +9,34 @@
 </div>
 <div class="row">
     <div class="col-12">
-        <h1 class="text-center">Registro de Alunos</h1>
+        <h1 class="text-center">Registro de Matrículas</h1>
     </div>
 </div>
 
 <div class="row mt-2 bg-body-secondary rounded-3">
-    <div class="col-6 p-2">
-        <form id="formulario">
+    <div class="col-sm-6 p-3">
+        <form id="formulario m-2">
+            
             {% csrf_token %}
             {{form.nome}}
         </form>
     </div>
-    <div class="col-2 d-flex justify-content-center p-2">
-        <input type="checkbox" class="btn-check" name="options-outlined" id="success-outlined" value="pesquisa"
+
+    <div class="col-sm-3 d-flex justify-content-center">
+        <input type="checkbox" class="btn-check " name="options-outlined" id="success-outlined" value="pesquisa"
             autocomplete="off" checked>
-        <label class="btn btn-outline-success" for="success-outlined"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
-  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
-</svg></label>
+        <label class="btn btn-outline-success  m-3" for="success-outlined" title="Pesquisar"><i class="bi bi-search"></i>
+    </label>
     </div>
-    <div class="col-2 d-flex justify-content-center p-2">
-        <button id="gravar" class="btn btn-outline-dark">Gravar</button>
+    
+    <div class="col-sm-2 d-flex justify-content-center">
+        <button id="gravar" class="btn btn-outline-dark m-3" title="Registrar Aluno">Gravar</button>
+    
+        <button id="relatorio" class="btn btn-outline-dark m-3" title="Gerar Relatório" data-bs-toggle="modal" data-bs-target="#relatorioModal">Relatório</button>
+        <button id="bkp" class="btn btn-outline-primary m-3" title="Enviar Cópia para a Nuvem"><i class="bi bi-cloud-arrow-up-fill"></i></button>
+
     </div>
-    <div class="col-2 d-flex justify-content-center p-2">
-        <button id="relatorio" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#relatorioModal">Relatório</button>
-    </div>
-   
+
 </div>
 
 <div class="row mt-3">
@@ -110,11 +113,14 @@
 <script type="text/javascript">
 
     $(document).ready(() => {
+
+  
         recarregarTabela();
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
         // Pesquisar 
         function sendBuscar() {
             let nome = document.getElementById("id_nome").value;
-            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
             $.post({
                 url: "{% url 'buscar' %}",
@@ -146,9 +152,23 @@
             }
         });
 
+        //Realizar Backup Na nuvem 
+        function sendBkp(){
+
+            $.post({
+                url: "{% url 'realizarbackup' %}",
+                headers: {
+                'X-CSRFToken': csrftoken},
+                  success: (response) => {
+                    configurarElementos(response);
+              
+                },
+
+            })
+        }
+
         //Baixar Pdf
          function sendBaixarPdf(rmi, rmf) {
-            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
             $.post({
                 url: "{% url 'baixarpdf' %}",
                // datatype: 'pdf',
@@ -200,7 +220,6 @@
         //Gravar Aluno
         function sendGravar() {
             let nome = document.getElementById("id_nome").value.toUpperCase();
-            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
             $.post({
                 url: "{% url 'gravar' %}",
                 headers: {
@@ -222,7 +241,6 @@
         // Atualizar Aluno
         function sendAtualizar(rm) {
             let nome = document.getElementById("id_nome").value.toUpperCase();
-            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
             $.post({
                 url: "{% url 'atualizar' %}",
 
@@ -247,7 +265,6 @@
 
         //Testando buscar aluno por rm
         function buscarAluno(rm) {
-            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
              $.post({
                 url: "{% url 'buscarRM' %}",
@@ -271,7 +288,6 @@
         
          // Testando Cancelar RM
         function sendCancelar(rm) {
-            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
             $.post({
                 url: "{% url 'cancelarRM' %}",
 
@@ -321,7 +337,7 @@
         });
 
         $("#baixarpdf").click(() => sendBaixarPdf($("#id_rmi").val(), $("#id_rmf").val()));
-
+        $("#bkp").click(() => sendBkp())
        
 
         $("#id_nome").focus().keydown();

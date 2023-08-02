@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import index, gravar, buscar, recarregarTabela, atualizar, baixar_pdf, cancelarRM, buscarRM
+from .views import index, gravar, buscar, recarregarTabela, atualizar, baixar_pdf, cancelarRM, buscarRM, realizar_backup
 
 urlpatterns = [
     path("", index, name="inicial" ),  
@@ -10,4 +10,5 @@ urlpatterns = [
     path("atualizar", atualizar, name="atualizar"),
     path("cancelarRM", cancelarRM, name="cancelarRM"), # em desenvolvimento
     path("baixarpdf", baixar_pdf, name="baixarpdf"),
+    path("bkp", realizar_backup, name="realizarbackup")
 ]

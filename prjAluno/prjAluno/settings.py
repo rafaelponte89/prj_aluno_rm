@@ -57,7 +57,7 @@ print('dIRBASE', BASE_DIR)
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [path.join((BASE_DIR), 'templates/')],
+        'DIRS': [path.join((BASE_DIR), 'templates/'), path.join((BASE_DIR), 'appAluno/bd/')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'prjAluno.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'real.sqlite3',
+        'NAME': BASE_DIR / 'bd/db.sqlite3',
     }
 }
 
