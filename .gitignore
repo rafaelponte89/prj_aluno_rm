@@ -1,3 +1,10 @@
 real.sqlite3
 *.pyc
 *.pdf
+*.json
+log_backup.txt
+*.txt
+*.sqlite3
+*.csv
+automatization.py
+chromedriver.exe

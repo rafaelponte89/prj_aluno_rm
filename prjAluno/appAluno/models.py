@@ -9,6 +9,10 @@ class Aluno (models.Model):
     rm = models.AutoField(primary_key=True)
     nome = models.CharField(max_length=150)
     cancelado = models.BooleanField(default=False)
+    ra = models.CharField(max_length=100,default='')
+    d_ra = models.CharField(max_length=1, default='')
+    data_nascimento = models.CharField(max_length=10, default='')
+    
 
     def __str__(self):
        

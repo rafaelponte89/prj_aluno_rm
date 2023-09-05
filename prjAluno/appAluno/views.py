@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.db.models import Q
 
+import time
 import io
 from pathlib import Path
 from os import path
@@ -21,12 +22,82 @@ from googleapiclient.http import HttpError
 from googleapiclient.http import MediaFileUpload
 import os
 from datetime import datetime
+import csv
 
+
+REF_TAMANHO_NOME = 2
+REF_TAMANHO_RA = 7
+
+# Códigos para testar a aplicação e/ou em desenvolvimento
+def rodarTeste():
+    j = 0
+    for i in range(4999):
+        aluno = Aluno(j,"NOME "+ str(i) + "SOBRENOME1 "+ str(i) + "SOBRENOME2"+ str(i))
+        j += 1
+        aluno.save()
+        
+def testePadronizaNome():
+    alunos = Aluno.objects.all()
+    
+    padronizar_nomes(alunos)
+
+# Migração para base de dados
+def migrar_dados_aluno():
+    alunos = Aluno.objects.filter(rm__gte=3520)
+    j = 0
+    acumulador = 0
+    nomes_migrados = []
+    nao_migrados = []
+    nao_migrados_count = 0
+    ls_arquivo_csv = []
+    print(len(alunos))
+    with open("alunos.csv","r",encoding="utf-8") as arquivo:
+        arquivo_csv = csv.reader(arquivo, delimiter=",")
+        for i, linha in enumerate(arquivo_csv):  
+            ls_arquivo_csv.append(linha)           
+    
+    print("Arquivo CsvTamanho",len(ls_arquivo_csv))
+    print("Objetos Alunos tamanho", len(alunos))
+    for i in range(len(alunos)):
+        while j < len(ls_arquivo_csv)-1:
+            nome_aluno = padronizar_nome(alunos[i].nome)
+            nome_aluno_csv = padronizar_nome(ls_arquivo_csv[j][0])
+            if nome_aluno == nome_aluno_csv and nome_aluno not in nomes_migrados:
+                    alunos[i].ra = ls_arquivo_csv[j][1]
+                    alunos[i].d_ra = ls_arquivo_csv[j][2]
+                    alunos[i].data_nascimento = ls_arquivo_csv[j][3]
+                    alunos[i].save()
+                    nomes_migrados.append(nome_aluno)
+                    acumulador += 1
+                    print(nome_aluno == nome_aluno)
+                    print(acumulador)
+            j += 1
+        j = 0
+        
+    for i in range(len(alunos)):
+        nome_aluno = padronizar_nome(alunos[i].nome)
+        for j in range(len(nomes_migrados)):
+            if nome_aluno not in nomes_migrados and nome_aluno not in nao_migrados:
+                nao_migrados.append(nome_aluno)
+                nao_migrados_count += 1
+                #print(padronizar_nome(linha[0]),"RA:", linha[1],"Digito RA",linha[2],"Data Nascimento:",linha[3] )
+    with open("migracao_quantidade_alunos.txt","w") as arquivo:
+        for nome in nomes_migrados:
+            arquivo.write(nome + '\n')    
+        arquivo.write("Total de Mudancas: " +  str(acumulador))
+    with open("nao_migrados.txt","w") as arquivo:
+        for nome in nao_migrados:
+            arquivo.write(nome + '\n')    
+        arquivo.write("Nao Migrados: " +  str(nao_migrados_count))
+    
 # Create your views here.
 
 def criar_log(texto,mensagem):
     with open('log_backup.txt','a') as bkp_log:
         bkp_log.write((datetime.now().strftime('%d/%m/%Y - %H:%M:%S') + ' Status: ' + mensagem + ' Descricao: ' + texto + '\n'))
+
+
+
 
 def realizar_backup(request):
     SCOPES =["https://www.googleapis.com/auth/drive"]
@@ -34,6 +105,8 @@ def realizar_backup(request):
     if os.path.exists("token.json"):
         creds = Credentials.from_authorized_user_file("token.json",SCOPES)
     
+    
+    # Observação erro na atualização do token
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
@@ -41,8 +114,9 @@ def realizar_backup(request):
             flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
             creds = flow.run_local_server(port=0)
             
-        with open('token.json','w') as token:
-            token.write(creds.to_json())
+    with open('token.json','w') as token:
+        token.write(creds.to_json())
+        
     try:
         service = build("drive","v3", credentials=creds)
         
@@ -81,21 +155,22 @@ def realizar_backup(request):
        print("Error: " + str(e))
        return criarMensagem("Falha no Backup!!!", "danger")
 
-
-        
-    
-
 def padronizar_nome(nome):
-    acentuados = {'Á':'A','Ã':'A','Â':'A','É':'E','Ê':'E','Í':'I','Î':'I','Ó':'O','Õ':'O','Ô':'O','Ú':'U','Û':'U'}   
+    acentuados = {'Á':'A','Ã':'A','Â':'A','É':'E','Ê':'E','Í':'I','Î':'I','Ó':'O','Õ':'O','Ô':'O','Ú':'U','Û':'U','Ç':'C','\'':'','\`':''}   
+    #acentuados = {'Á':'A','Ã':'A','Â':'A','É':'E','Ê':'E','Í':'I','Î':'I','Ó':'O','Õ':'O','Ô':'O','Ú':'U','Û':'U'}   
+
     letra_nova = ''
     for letra in nome:
         if letra in acentuados.keys():
             letra_nova = acentuados[letra]
             nome = nome.replace(letra,letra_nova)
-    return nome
+            
+    return nome.rstrip(' ').lstrip(' ')
 
 def padronizar_nomes(alunos):
-    acentuados = {'Á':'A','Ã':'A','Â':'A','É':'E','Ê':'E','Í':'I','Î':'I','Ó':'O','Õ':'O','Ô':'O','Ú':'U','Û':'U'}   
+    acentuados = {'Á':'A','Ã':'A','Â':'A','É':'E','Ê':'E','Í':'I','Î':'I','Ó':'O','Õ':'O','Ô':'O','Ú':'U','Û':'U','Ç':'C'}   
+
+    #acentuados = {'Á':'A','Ã':'A','Â':'A','É':'E','Ê':'E','Í':'I','Î':'I','Ó':'O','Õ':'O','Ô':'O','Ú':'U','Û':'U'}   
     letra_nova = ''
     for aluno in alunos:
         for letra in aluno.nome:
@@ -104,8 +179,7 @@ def padronizar_nomes(alunos):
                 aluno.nome = aluno.nome.replace(letra,letra_nova)
                 print(aluno.nome)
                 aluno.save()
-    
-            
+             
 def buscar_duplicados(alunos):
    
     nomes_rm = {}
@@ -124,46 +198,42 @@ def buscar_duplicados(alunos):
             duplicados[k] = v
             
     return duplicados.keys()
-
-def rodarTeste():
-    j = 0
-    for i in range(4999):
-        aluno = Aluno(j,"NOME "+ str(i) + "SOBRENOME1 "+ str(i) + "SOBRENOME2"+ str(i))
-        j += 1
-        aluno.save()
-        
-def testePadronizaNome():
-    alunos = Aluno.objects.all()
     
-    padronizar_nomes(alunos)
-        
 # Gravar registro do Aluno
 def gravar(request):
     #print("gravar")
-    nome = request.POST.get("nome").lstrip(' ').rstrip('')
-    tamanho = len(nome)
+    nome = padronizar_nome(request.POST.get("nome"))
+    ra = request.POST.get("ra")
+    tamanho_nome = len(nome)
+    tamanho_ra = len(ra)
 
     try:
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         if is_ajax:
             if request.method == 'POST':
-                form = frmAluno({"nome":padronizar_nome(nome)})
+                form = frmAluno({"nome":nome,"ra":ra})
                 if form.is_valid():
-                    if( tamanho > 3): 
+                    if( tamanho_nome > REF_TAMANHO_NOME):
+                        if(tamanho_ra > REF_TAMANHO_RA): 
                          
-                        print('formulario',form["nome"])
-                        form.save() 
-                        #print('nome',padronizar_nome(request.POST.get("nome").lstrip(' ').rstrip('')))
+                            print('formulario',form["nome"])
+                            form.save() 
+                            #print('nome',padronizar_nome(request.POST.get("nome").lstrip(' ').rstrip('')))
       
-                        mensagem = criarMensagem("Aluno Registrado com Sucesso!","success")
+                            mensagem = criarMensagem("Aluno Registrado com Sucesso!","success")
+                        else:
+                            mensagem = criarMensagem("RA muito Pequeno","warning")
                         
                     else:
                         mensagem = criarMensagem("Nome muito Pequeno!","warning")
                 else:
-                    if tamanho > 3: 
-                        mensagem = criarMensagem("Aluno já existe!!","danger")
-                    else:
+                    if tamanho_nome == 0: 
                         mensagem = criarMensagem("Nome em Branco!!","warning")
+                    elif tamanho_ra == 0: 
+                        mensagem = criarMensagem("RA em Branco!!","warning")
+
+
+                    
                 return mensagem
                         
                         
@@ -200,6 +270,7 @@ def atualizarTabela(alunos):
             
         tabela += ' <tr>' + status_rm + \
                     '<td class="align-middle">'+aluno.nome+'</td> \
+                        <td>' + aluno.ra+  '</td> \
                         <td class="text-center conteudoAtualizar">' \
                         +botao+ \
                     '</td> </tr>'    
@@ -228,10 +299,10 @@ def recarregarTabela(request):
     return tabela
 
 def buscar(request):
-    nome = request.POST.get("nome").upper().rstrip().lstrip()
+    nome = padronizar_nome(request.POST.get("nome").upper().rstrip().lstrip())
     tamanho = len(nome)
     print(nome)
-    if (tamanho > 3) :
+    if (tamanho > REF_TAMANHO_NOME) :
         alunos = Aluno.objects.filter(nome__contains=nome)[:10]
         buscar_duplicados(alunos)
         tabela = atualizarTabela(alunos)
@@ -256,18 +327,27 @@ def buscarRM(request):
        
 def atualizar(request):
     nome = padronizar_nome(request.POST.get("nome").lstrip().rstrip())
+    ra = request.POST.get("ra")
+    tamanho_ra = len(ra)
+
     rm = int(request.POST.get("rm"))
-    tamanho = len(nome)
+    
+    tamanho_nome = len(nome)
     if rm != '':
-        if(tamanho > 3):
+        if(tamanho_nome > REF_TAMANHO_NOME):
             rm = int(request.POST.get("rm"))
             #print(rm)
             aluno = Aluno.objects.get(pk=rm)
             aluno.nome = nome
+            if tamanho_ra > REF_TAMANHO_RA:
+                aluno.ra = ra
+           
             aluno.save()
             mensagem = criarMensagem(f"Registro de Aluno Atualizado com Sucesso!!! RM: {rm} - Nome (Atualizado): {nome}","success")
         else:
-            if(tamanho == 0):
+            if tamanho_ra > REF_TAMANHO_RA:
+                aluno.ra = ra
+            elif(tamanho_nome == 0):
                 mensagem = criarMensagem("Nome em Branco!!","warning")
             else:  
                 mensagem = criarMensagem("Nome muito Pequeno!","warning")
@@ -279,17 +359,47 @@ def gerarIntervalo(rm_inicial, rm_final):
     
     alunos = Aluno.objects.filter(Q(rm__gte=rm_inicial) & Q(rm__lte=rm_final))
     return alunos
+
+
+
+    
     
 def index(request):
+    
+    
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
    
+   
+    #login_sed()
+    #acessar_caminho()
+    #buscar_dados_historico(lista_ra)
+    
+    #aba = driver.find_element(By.XPATH,'//*[@id="aba5"]/a')
+    
+    #aba = driver.find_element(By.ID,'btnConsultarIrmao')
+
+   
+    #aba.click()
+    #driver.execute_script("arguments[0].click(listarMatriculasFichaAluno(false));",aba)
+    #print(aba)
+
+    #driver.implicitly_wait(0.5)
+
+    #driver.execute_script("arguments[0].click();",link_matricula)
+    
+    
+
+    
+    #time.sleep(10)
+
+
     #print("index",is_ajax)
     #rodarTeste()
     context = {
             'form': frmAluno(),
         }
-    testePadronizaNome()
-   
+    #testePadronizaNome()
+    #migrar_dados_aluno()
    
     return render(request,'index.html', context)
 
