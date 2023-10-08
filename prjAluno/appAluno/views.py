@@ -4,6 +4,7 @@ from .forms import frmAluno
 from django.contrib import messages
 from django.http import HttpResponse
 from django.db.models import Q
+from django.views.decorators.csrf import csrf_exempt
 
 import time
 import io
@@ -23,6 +24,7 @@ from googleapiclient.http import MediaFileUpload
 import os
 from datetime import datetime
 import csv
+from .automatization import login_sed_2, acessar_caminho, buscar_dados
 
 
 REF_TAMANHO_NOME = 2
@@ -91,13 +93,9 @@ def migrar_dados_aluno():
         arquivo.write("Nao Migrados: " +  str(nao_migrados_count))
     
 # Create your views here.
-
 def criar_log(texto,mensagem):
     with open('log_backup.txt','a') as bkp_log:
         bkp_log.write((datetime.now().strftime('%d/%m/%Y - %H:%M:%S') + ' Status: ' + mensagem + ' Descricao: ' + texto + '\n'))
-
-
-
 
 def realizar_backup(request):
     SCOPES =["https://www.googleapis.com/auth/drive"]
@@ -250,19 +248,19 @@ def atualizarTabela(alunos):
         if aluno.cancelado:
             status_rm = '<tr><td class="align-middle">' + str(aluno.rm) + '</td>'
             
-            botao = '<button type="button" class="btn btn-outline-danger btn-lg  disabled" aria-label="cancelar'+str(aluno.nome)+  '" value='+str(aluno.rm)+'> \
+            botao = '<button type="button" class="btn btn-outline-danger btn-lg  disabled" aria-label="cancelar'+str(aluno.nome)+  '" value="'+str(aluno.rm)+'"> \
                             <i class="bi bi-x-circle-fill"></i> \
                         </button>' 
         else:
             if nome in nomes_duplicados:
                 status_rm = '<tr><td class="align-middle">' + str(aluno.rm) + \
-                '<button "type="button" class="btn btn-outline-primary m-2 advertencia" value='+str(aluno.rm)+' data-bs-toggle="modal" data-bs-target="#resolucaoDuplicidadeModal" ><i class="bi bi-person-fill-exclamation"></i></button></a></td>'
-                botao = '<button type="button" class="btn btn-outline-dark btn-lg atualizar disabled"  value='+str(aluno.rm)+'> \
+                '<button "type="button" class="btn btn-outline-primary m-2 advertencia" value="'+str(aluno.rm)+'" data-bs-toggle="modal" data-bs-target="#resolucaoDuplicidadeModal" ><i class="bi bi-person-fill-exclamation"></i></button></a></td>'
+                botao = '<button type="button" class="btn btn-outline-dark btn-lg atualizar"  value='+str(aluno.rm)+'> \
                             <i class="bi bi-arrow-repeat"></i> \
                         </button>'
             else:
                 status_rm = '<tr><td class="align-middle">' + str(aluno.rm) + '</td>'
-                botao = '<button type="button" class="btn btn-outline-dark btn-lg atualizar disabled" aria-label=atualizar'+str(aluno.nome)+'  value='+str(aluno.rm)+'> \
+                botao = '<button type="button" class="btn btn-outline-dark btn-lg atualizar" aria-label="atualizar'+str(aluno.nome)+'"  value="'+str(aluno.rm)+'"> \
                             <i class="bi bi-arrow-repeat"></i> \
                         </button>'
                 
@@ -290,7 +288,8 @@ def cancelarRM(request):
     aluno.cancelado = True
     aluno.save()
     return criarMensagem(f"{aluno.nome} - {aluno.rm} : Cancelado!!!","success")
-       
+
+# reset na tabela 
 def recarregarTabela(request):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     #print("recarregar",is_ajax)
@@ -307,7 +306,6 @@ def buscar(request):
         buscar_duplicados(alunos)
         tabela = atualizarTabela(alunos)
         
-        
         if len(tabela.content)>0:
            
             return tabela
@@ -318,11 +316,63 @@ def buscar(request):
     else:
         return recarregarTabela(request)
     
-def buscarRM(request):
+def buscarRMCancelar(request):
     rm = request.POST.get('rm')
     print("RM", rm)
     aluno = Aluno.objects.get(pk=rm)
     dados = f'<div class="col-12"> <p class="text-white bg-dark" > RM: <span id="registroAluno">{aluno.rm} </span> </p> <p class="text-white bg-dark"> Nome: {aluno.nome} </p>  </div>'
+    return HttpResponse(dados)
+
+# busca aluno por rm
+@csrf_exempt
+def buscarRM(request):
+    rm = request.POST.get('rm')
+    print("RM", rm)
+    aluno = Aluno.objects.get(pk=rm)
+    #dados = f'<div class="col-12"> <p class="text-white bg-dark" > RM: <span id="registroAluno">{aluno.rm} </span> </p> <p class="text-white bg-dark"> Nome: {aluno.nome} </p>  </div>'
+    #form = frmAluno({"nome":aluno.nome,"ra":aluno.ra})
+    dados =  f'<div class="col-sm-6 p-3"> \
+           <div class="input-group"> \
+      <div class="input-group-prepend"> \
+        <span class="input-group-text bg-dark text-white" id="basic-addon1"><i class="bi bi-search"></i></span>\
+      </div> \
+            <input type="text" name="nome" maxlength="100" class="form-control formulario" placeholder="Nome do Aluno" aria-describedby="basic-addon1" required="" id="id_nome" value="{aluno.nome}"> \
+            </div> \
+            </div> \
+            <div class="col-sm-2 p-3"> \
+            <input type="number" name="ra" maxlength="20" class="form-control formulario" placeholder="RA" required="" id="id_ra" value="{aluno.ra}"> \
+        </div> \
+            <div class="col-sm-4 d-flex justify-content-center"> \
+    <button id="gravar" class="btn btn-outline-dark m-3" title="Registrar Aluno" style={"display:none"}> \
+      Gravar \
+    </button> \
+    <button \
+      id="atualizar2" \
+      class="btn btn-outline-primary m-3"\
+      title="Atualizar Aluno" \
+      value="{aluno.rm}" \
+    > \
+      Atualizar\
+    </button>\
+    \
+    <button\
+      id="relatorio"\
+      class="btn btn-outline-dark m-3"\
+      title="Gerar Relatório"\
+      data-bs-toggle="modal"\
+      data-bs-target="#relatorioModal"\
+    >\
+      Relatório\
+    </button>\
+    <button\
+      id="bkp"\
+      class="btn btn-outline-primary m-3"\
+      title="Enviar Cópia para a Nuvem"\
+    >\
+      <i class="bi bi-cloud-arrow-up-fill"></i>\
+    </button>\
+  </div>'
+        
     return HttpResponse(dados)
        
 def atualizar(request):
@@ -335,7 +385,7 @@ def atualizar(request):
     tamanho_nome = len(nome)
     if rm != '':
         if(tamanho_nome > REF_TAMANHO_NOME):
-            rm = int(request.POST.get("rm"))
+            #rm = int(request.POST.get("rm"))
             #print(rm)
             aluno = Aluno.objects.get(pk=rm)
             aluno.nome = nome
@@ -359,18 +409,14 @@ def gerarIntervalo(rm_inicial, rm_final):
     
     alunos = Aluno.objects.filter(Q(rm__gte=rm_inicial) & Q(rm__lte=rm_final))
     return alunos
-
-
-
-    
-    
+  
 def index(request):
     
     
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
    
    
-    #login_sed()
+    #login_sed_2()
     #acessar_caminho()
     #buscar_dados_historico(lista_ra)
     

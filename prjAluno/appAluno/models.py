@@ -4,7 +4,9 @@ from django.db import models
 # Create your models here.
 
 
+
     
+# Aluno
 class Aluno (models.Model):
     rm = models.AutoField(primary_key=True)
     nome = models.CharField(max_length=150)
@@ -28,8 +30,35 @@ class Aluno (models.Model):
         alunos = Aluno.objects.order_by('-rm')[:n]
         return alunos
     
+#Telefones do aluno (NÃO IMPLEMENTADO)
+class Telefones(models.Model):
+    TEL_CHOICES = (
+        ('M','MÓVEL'),
+        ('F','FIXO')
+    )
+    rm = models.ForeignKey(Aluno, on_delete=models.RESTRICT)
+    tel_tipo = models.CharField(max_length=1, choices=TEL_CHOICES, blank=False, null=False)
+    tel_desc = models.CharField(max_length=10)
     
-    
+#Documentos do aluno (NÃO IMPLEMENTADO)
+class Documento(models.Model):
+    DOCUMENTO_CHOICES = (
+        ('CN','Certidão de Nascimento'),
+        ('RGA','RG - Aluno'),
+        ('CPFA','CPF - Aluno'),
+        ('CV','Carteira Vacinação'),
+        ('RGR','RG - Responsável'),
+        ('CPFR','CPF - Responsável'),
+        ('CNH','CNH'),
+        ('FM','Ficha de Matrícula'),
+        ('CR','Comprovante de Residência'),
+        ('LD','Laudo'),
+        ('OT','Outros')
+    )
+    #aluno = models.ForeignKey(Aluno)
+    descricao = models.CharField(max_length=4, choices=DOCUMENTO_CHOICES, blank=False, null=False) 
+    caminho = models.ImageField()
+
     
     
 

@@ -1,401 +1,516 @@
-{% extends 'base.html' %}
-
-{% block content %}
+{% extends 'base.html' %} {% block content %}
 
 <div class="row">
-    <div id="mensagens" class="col-12">
-     
-    </div>
+  <div id="mensagens" class="col-12"></div>
 </div>
 <div class="row">
-    <div class="col-12">
-        <h1 class="text-center">Registro de Alunos</h1>
+  <div class="col-12">
+    <h1 class="text-center">Registro de Alunos</h1>
+  </div>
+</div>
+
+<div id="aluno" class="row mt-2 bg-body-secondary rounded-3">
+  {% csrf_token %}
+  <!--   <label class="btn btn-outline-success  m-3" for="success-outlined" title="Pesquisar"><i class="bi bi-search"></i>-->
+
+  <div class="col-sm-6 p-3">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text bg-dark text-white" id="basic-addon1"
+          ><i class="bi bi-search"></i
+        ></span>
+      </div>
+      {{form.nome}}
     </div>
+  </div>
+  <div class="col-sm-2 p-3">{{form.ra}}</div>
+
+  <div class="col-sm-4 d-flex justify-content-center">
+    <button
+      id="gravar"
+      class="btn btn-outline-dark m-3"
+      title="Registrar Aluno"
+    >
+      Gravar
+    </button>
+    <!--<button
+      id="atualizar2"
+      class="btn btn-outline-primary m-3"
+      title="Atualizar Aluno"
+      style="{display:none}"
+    >
+      Atualizar
+    </button>
+    -->
+    <button
+      id="relatorio"
+      class="btn btn-outline-dark m-3"
+      title="Gerar Relatório"
+      data-bs-toggle="modal"
+      data-bs-target="#relatorioModal"
+    >
+      Relatório
+    </button>
+    <button
+      id="bkp"
+      class="btn btn-outline-primary m-3"
+      title="Enviar Cópia para a Nuvem"
+    >
+      <i class="bi bi-cloud-arrow-up-fill"></i>
+    </button>
+  </div>
 </div>
 
-<div class="row mt-2 bg-body-secondary rounded-3"> 
-    {% csrf_token %}
-   
-        <div class="col-sm-6 p-3">
-            {{form.nome}}
-       
-        </div>
-      <div class="col-sm-2 p-3">
-        
-           
-            {{form.ra}}
-        </div>
-        
-
-
-    <div class="col-sm-3 d-flex justify-content-center">
-        <input type="checkbox" class="btn-check " name="options-outlined" id="success-outlined" value="pesquisa"
-            autocomplete="off" checked>
-        <label class="btn btn-outline-success  m-3" for="success-outlined" title="Pesquisar"><i class="bi bi-search"></i>
-    </label>
-    </div>    
+<!--<div class="row mt-2 bg-body-secondary rounded-3">
+  <div class="col-sm-12 d-flex justify-content-center">
+    <button
+      id="gravar"
+      class="btn btn-outline-dark m-3"
+      title="Registrar Aluno"
+    >
+      Gravar
+    </button>
+    <button
+      id="atualizar2"
+      class="btn btn-outline-primary m-3"
+      title="Atualizar Aluno"
+    >
+      Atualizar
+    </button>
+    <button
+      id="relatorio"
+      class="btn btn-outline-dark m-3"
+      title="Gerar Relatório"
+      data-bs-toggle="modal"
+      data-bs-target="#relatorioModal"
+    >
+      Relatório
+    </button>
+    <button
+      id="bkp"
+      class="btn btn-outline-primary m-3"
+      title="Enviar Cópia para a Nuvem"
+    >
+      <i class="bi bi-cloud-arrow-up-fill"></i>
+    </button>
+  </div>
 </div>
-
-<div class="row mt-2 bg-body-secondary rounded-3">
-    <div class="col-sm-12 d-flex justify-content-center">
-        <button id="gravar" class="btn btn-outline-dark m-3" title="Registrar Aluno">Gravar</button>
-        <button id="relatorio" class="btn btn-outline-dark m-3" title="Gerar Relatório" data-bs-toggle="modal" data-bs-target="#relatorioModal">Relatório</button>
-        <button id="bkp" class="btn btn-outline-primary m-3" title="Enviar Cópia para a Nuvem"><i class="bi bi-cloud-arrow-up-fill"></i></button>
-
-    </div>
-</div>
+-->
 <div class="row mt-3">
-    <div class="col-12">
-        <table id="tabela" class="table table-hover table-responsive table-bordered table-success">
-            <thead>
-                <th>RM</th>
-                <th>Nome</th>
-                <th>RA</th>
-                <th>Atualizar</th>
-                
-                
-            </thead>
-            <tbody id="corpoTabela">
-               
-            </tbody>
-        </table>
-    </div>
+  <div class="col-12">
+    <table
+      id="tabela"
+      class="table table-hover table-responsive table-bordered table-success"
+    >
+      <thead>
+        <th>RM</th>
+        <th>Nome</th>
+        <th>RA</th>
+        <th>Atualizar</th>
+      </thead>
+      <tbody id="corpoTabela">
+        <!-- Tabela dinâmica aparece aqui -->
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <!-- Modal Relatório -->
-<div class="modal fade" id="relatorioModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="relatorioModal"
+  tabindex="-1"
+  aria-labelledby="exampleModalLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="exampleModalLabel">Geração do Relatório</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
       </div>
       <div class="modal-body">
-      <div class="row">
-      <div class="col-12">
-        <input type="number" name="rmi" maxlength="150" class="form-control" 
-        placeholder="RM Inicial" required="" id="id_rmi" min="1">
-        </div>
+        <div class="row">
+          <div class="col-12">
+            <input
+              type="number"
+              name="rmi"
+              maxlength="150"
+              class="form-control"
+              placeholder="RM Inicial"
+              required=""
+              id="id_rmi"
+              min="1"
+            />
+          </div>
         </div>
         <div class="row mt-2">
-        <div class="col-12">
-         <input type="number" name="rmf" maxlength="150" class="form-control" 
-        placeholder="RM Final" required="" id="id_rmf" min="1">
-        </div>
+          <div class="col-12">
+            <input
+              type="number"
+              name="rmf"
+              maxlength="150"
+              class="form-control"
+              placeholder="RM Final"
+              required=""
+              id="id_rmf"
+              min="1"
+            />
+          </div>
         </div>
       </div>
       <div class="modal-footer">
-     
-        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Fechar</button>
-        <button id="baixarpdf" type="button" class="btn btn-primary">Baixar PDF</button>
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+          Fechar
+        </button>
+        <button id="baixarpdf" type="button" class="btn btn-primary">
+          Baixar PDF
+        </button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- Modal Resolução de Duplicidade-->
-<div class="modal fade" id="resolucaoDuplicidadeModal" tabindex="-1" aria-labelledby="resolucaoDuplicidadeModalLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="resolucaoDuplicidadeModal"
+  tabindex="-1"
+  aria-labelledby="resolucaoDuplicidadeModalLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="resolucaoDuplicidadeModalLabel">Deseja Cancelar este Registro?</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h5 class="modal-title" id="resolucaoDuplicidadeModalLabel">
+          Deseja Cancelar este Registro?
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
       </div>
       <div class="modal-body">
-      <div id="identificador" class="row">
-        <!-- Dados do Registro Aqui -->
-      </div>
-      <div class="modal-footer">
-     
-        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Não</button>
-        <button id="simCancelar" type="button" class="btn btn-primary" data-bs-dismiss="modal">Sim</button>
+        <div id="identificador" class="row">
+          <!-- Dados do Registro Aqui -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+            Não
+          </button>
+          <button
+            id="simCancelar"
+            type="button"
+            class="btn btn-primary"
+            data-bs-dismiss="modal"
+          >
+            Sim
+          </button>
+        </div>
       </div>
     </div>
   </div>
-</div>
-<!-- Fim Modal Resolução de Duplicidade-->
+  <!-- Fim Modal Resolução de Duplicidade-->
 
-
-
-<script type="text/javascript">
-
+  <script type="text/javascript">
     $(document).ready(() => {
+      recarregarTabela();
+      const csrftoken = document.querySelector(
+        "[name=csrfmiddlewaretoken]"
+      ).value;
 
-  
-        recarregarTabela();
-        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+      // Pesquisar
+      function sendBuscar() {
+        let nome = document.getElementById("id_nome").value;
+        $.post({
+          url: "{% url 'buscar' %}",
+          data: {
+            nome: nome,
+          },
+          headers: {
+            "X-CSRFToken": csrftoken,
+          },
+          success: (response) => {
+            $("#corpoTabela").html(response);
+            let advertencias = document.getElementsByClassName("advertencia");
+            for (let i = 0; i < advertencias.length; i++) {
+              advertencias[i].addEventListener("click", function () {
+                buscarAlunoCancelar(advertencias[i].value);
+              });
+            }
+            let botoes_atualizar = document.getElementsByClassName("atualizar");
+            for (let i = 0; i < botoes_atualizar.length; i++) {
+              //alert(botoes_atualizar[i].value);
+              botoes_atualizar[i].addEventListener("click", function () {
+                //sendAtualizar(botoes_atualizar[i].value);
+                buscarAluno(botoes_atualizar[i].value);
+                document.getElementById("gravar").style.display = "none";
+              });
+            }
+          },
+        });
+      }
 
-        // Pesquisar 
-        function sendBuscar() {
-            let nome = document.getElementById("id_nome").value;
+      $("#id_nome").keyup(() => sendBuscar());
 
-            $.post({
-                url: "{% url 'buscar' %}",
-                data: {
-                    "nome": nome,
-                },
-                  headers: {
-                    'X-CSRFToken': csrftoken
-                },
-                success: (response) => {
-                    $("#corpoTabela").html(response);
-                    let advertencias = document.getElementsByClassName("advertencia");
-                     for(let i = 0; i < advertencias.length; i++) {
-                         advertencias[i].addEventListener("click", function(){
-                             buscarAluno(advertencias[i].value);
-                         });
-                     }
-                     
-                    
-                   
-                }
-            })
-        }
+      //Realizar Backup Na nuvem
+      function sendBkp() {
+        $.post({
+          url: "{% url 'realizarbackup' %}",
+          headers: {
+            "X-CSRFToken": csrftoken,
+          },
+          success: (response) => {
+            configurarElementos(response);
+          },
+        });
+      }
 
-        $("#id_nome").keyup(() => {
-            if ($("#success-outlined").is(":checked")) {
+      //Baixar Pdf
+      function sendBaixarPdf(rmi, rmf) {
+        $.post({
+          url: "{% url 'baixarpdf' %}",
+          // datatype: 'pdf',
+          data: {
+            rmi: rmi,
+            rmf: rmf,
+          },
+          headers: {
+            "X-CSRFToken": csrftoken,
+          },
+          success: (response) => {
+            var blob = new Blob([response], { type: "application/pdf" });
 
+            if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+              window.navigator.msSaveOrOpenBlob(blob); // for IE
+            } else {
+              var fileURL = URL.createObjectURL(blob);
+              var newWin = window.open(fileURL);
+              newWin.focus();
+            }
+          },
+        });
+      }
+
+      // Recarregar Tabela Estado Inicial
+      function recarregarTabela() {
+        $.get({
+          url: "{% url 'recarregarTabela' %}",
+          success: (response) => {
+            $("#corpoTabela").html(response);
+            let advertencias = document.getElementsByClassName("advertencia");
+            for (let i = 0; i < advertencias.length; i++) {
+              advertencias[i].addEventListener("click", function () {
+                buscarAlunoCancelar(advertencias[i].value);
+              });
+            }
+
+            let botoes_atualizar = document.getElementsByClassName("atualizar");
+            for (let i = 0; i < botoes_atualizar.length; i++) {
+              //alert(botoes_atualizar[i].value);
+              botoes_atualizar[i].addEventListener("click", function () {
+                //sendAtualizar(botoes_atualizar[i].value);
+
+                buscarAluno(botoes_atualizar[i].value);
+              });
+            }
+          },
+          fail: (response) => {},
+        });
+      }
+
+      //Gravar Aluno
+      function sendGravar() {
+        let nome = document.getElementById("id_nome").value.toUpperCase();
+        let ra = document.getElementById("id_ra").value.toUpperCase();
+        $.post({
+          url: "{% url 'gravar' %}",
+          headers: {
+            "X-CSRFToken": csrftoken,
+          },
+          data: {
+            nome: nome,
+            ra: ra,
+          },
+          success: (response) => {
+            configurarElementos(response);
+          },
+          fail: (response) => {},
+        });
+      }
+
+      // Atualizar Aluno
+      function sendAtualizar(rm) {
+        let nome = document.getElementById("id_nome").value.toUpperCase();
+        let ra = document.getElementById("id_ra").value;
+        $.post({
+          url: "{% url 'atualizar' %}",
+          headers: {
+            "X-CSRFToken": csrftoken,
+          },
+          data: {
+            nome: nome,
+            rm: rm,
+            ra: ra,
+          },
+          success: (response) => {
+            $("#gravar").click(() => sendGravar());
+            $("#id_nome").off("keypress");
+            $("#id_ra").off("keypress");
+            $("#id_nome").keypress((event) => {
+              let tecla = event.which;
+              if (tecla == 13) {
+                sendGravar();
+              }
+            });
+            $("#id_ra").keypress((event) => {
+              let tecla = event.which;
+              if (tecla == 13) {
+                sendGravar();
+              }
+            });
+            $("#id_nome").keyup(() => sendBuscar());
+
+            configurarElementos(response);
+            document.getElementById("gravar").style.display = "block";
+            document.getElementById("atualizar2").style.display = "none";
+            document.getElementById("basic-addon1").classList.add("bg-dark");
+            document.getElementById("basic-addon1").classList.add("text-white");
+          },
+          fail: (response) => {},
+        });
+      }
+
+      //Testando buscar aluno por rm
+      function buscarAlunoCancelar(rm) {
+        $.post({
+          url: "{% url 'buscarRMCancelar' %}",
+
+          headers: {
+            "X-CSRFToken": csrftoken,
+          },
+          data: {
+            rm: rm,
+          },
+          success: (response) => {
+            $("#identificador").html(response);
+          },
+          fail: (response) => {},
+        });
+      }
+
+      //Testando buscar aluno por rm
+      function buscarAluno(rm) {
+        $.post({
+          url: "{% url 'buscarRM' %}",
+
+          headers: {
+            "X-CSRFToken": csrftoken,
+          },
+          data: {
+            rm: rm,
+          },
+          success: (response) => {
+            $("#aluno").html(response);
+            let nome = document.getElementById("id_nome");
+            let atualizar2 = document.getElementById("atualizar2");
+            document.getElementById("basic-addon1").classList.remove("bg-dark");
+            document
+              .getElementById("basic-addon1")
+              .classList.remove("text-white");
+
+            atualizar2.addEventListener("click", () => {
+              sendAtualizar(atualizar2.value);
+
+              //habilita a pesquisa após atualizar
+              nome.addEventListener("keyup", () => {
                 sendBuscar();
-            }
+              });
+            });
+
+            $("#id_nome").keypress((event) => {
+              let tecla = event.which;
+              if (tecla == 13) {
+                sendAtualizar(atualizar2.value);
+              }
+            });
+            $("#id_ra").keypress((event) => {
+              let tecla = event.which;
+              if (tecla == 13) {
+                sendAtualizar(atualizar2.value);
+              }
+            });
+          },
+          fail: (response) => {},
         });
+      }
 
-        //Realizar Backup Na nuvem 
-        function sendBkp(){
+      // Testando Cancelar RM
+      function sendCancelar(rm) {
+        $.post({
+          url: "{% url 'cancelarRM' %}",
 
-            $.post({
-                url: "{% url 'realizarbackup' %}",
-                headers: {
-                'X-CSRFToken': csrftoken},
-                  success: (response) => {
-                    configurarElementos(response);
-              
-                },
-
-            })
-        }
-
-        //Baixar Pdf
-         function sendBaixarPdf(rmi, rmf) {
-            $.post({
-                url: "{% url 'baixarpdf' %}",
-               // datatype: 'pdf',
-                data: {
-                    "rmi": rmi,
-                    "rmf": rmf
-                },
-                  headers: {
-                    'X-CSRFToken': csrftoken
-                },
-                success: (response) => {
-                  
-                var blob = new Blob([response], { type: 'application/pdf' });
-
-                if (window.navigator && window.navigator.msSaveOrOpenBlob) {
-                    window.navigator.msSaveOrOpenBlob(blob); // for IE
-                }
-                else {
-                    var fileURL = URL.createObjectURL(blob);
-                    var newWin = window.open(fileURL);
-                    newWin.focus();
-                 
-                }
-                
-                }
-            })
-        }
-
-        // Recarregar Tabela Estado Inicial
-        function recarregarTabela() {
-            $.get({
-                url: "{% url 'recarregarTabela' %}",
-                success: (response) => {
-
-                    $("#corpoTabela").html(response);
-                     let advertencias = document.getElementsByClassName("advertencia");
-                     for(let i = 0; i < advertencias.length; i++) {
-                         advertencias[i].addEventListener("click", function(){
-                             buscarAluno(advertencias[i].value);
-                         });
-                     }
-                },
-                fail: (response) => {
-
-                }
-            })
-        }
-    
-        //Gravar Aluno
-        function sendGravar() {
-            let nome = document.getElementById("id_nome").value.toUpperCase();
-            let ra = document.getElementById("id_ra").value.toUpperCase();
-            $.post({
-                url: "{% url 'gravar' %}",
-                headers: {
-                    'X-CSRFToken': csrftoken
-                },
-                data: {
-                    "nome": nome,
-                    "ra": ra
-                },
-                success: (response) => {
-                    configurarElementos(response);
-
-                },
-                fail: (response) => {
-
-
-                }
-            })
-        }
-        // Atualizar Aluno
-        function sendAtualizar(rm) {
-            let nome = document.getElementById("id_nome").value.toUpperCase();
-            let ra = document.getElementById("id_ra").value;
-            $.post({
-                url: "{% url 'atualizar' %}",
-
-                headers: {
-                    'X-CSRFToken': csrftoken
-                },
-                data: {
-                    "nome": nome,
-                    "rm": rm,
-                    "ra": ra
-                },
-                success: (response) => {
-                    configurarElementos(response);
-              
-                },
-                fail: (response) => {
-
-
-                }
-            }) 
-        }
-
-
-        //Testando buscar aluno por rm
-        function buscarAluno(rm) {
-
-             $.post({
-                url: "{% url 'buscarRM' %}",
-
-                headers: {
-                    'X-CSRFToken': csrftoken
-                },
-                data: {
-                    "rm": rm
-                },
-                success: (response) => {
-                    $("#identificador").html(response)
-                   
-                    
-                },
-                fail: (response) => {
-                }
-            }) 
-        }
-
-        
-         // Testando Cancelar RM
-        function sendCancelar(rm) {
-            $.post({
-                url: "{% url 'cancelarRM' %}",
-
-                headers: {
-                    'X-CSRFToken': csrftoken
-                },
-                data: {
-                    "rm": rm
-                },
-                success: (response) => {
-                    configurarElementos(response);
-              
-                },
-                fail: (response) => {
-                }
-            }) 
-        }
-
-         $("#simCancelar").click(()=>{
-                        //console.log($("#registroAluno").text())
-                    
-                       sendCancelar($("#registroAluno").text());
-                    });
-
-        function configurarElementos(response) {
-                    $("#mensagens").html(response);
-                     setTimeout(function(){
-                        $("#mensagem").css("display","none");
-                    }, 3000);
-                    $("#id_nome").text = '';
-                    $("#id_ra").prop("value",null);
-                    $("#id_nome").focus();
-                    $("#success-outlined").prop('checked', true);
-                    $("#id_nome").prop("value",'');
-                    recarregarTabela();
-         
-        }
-
-        $("#gravar").click(() => sendGravar());
-       
-
-        $("#id_nome").keypress((event) => {
-            let tecla = event.which;
-            if (tecla == 13) {
-                sendGravar();
-               
-            }
+          headers: {
+            "X-CSRFToken": csrftoken,
+          },
+          data: {
+            rm: rm,
+          },
+          success: (response) => {
+            configurarElementos(response);
+          },
+          fail: (response) => {},
         });
-         $("#id_ra").keypress((event) => {
-            let tecla = event.which;
-            if (tecla == 13) {
-                sendGravar();
-               
-            }
-        });
+      }
 
-        $("#baixarpdf").click(() => sendBaixarPdf($("#id_rmi").val(), $("#id_rmf").val()));
-        $("#bkp").click(() => sendBkp())
-       
+      $("#simCancelar").click(() => {
+        //console.log($("#registroAluno").text())
 
-        $("#id_nome").focus().keydown();
+        sendCancelar($("#registroAluno").text());
+      });
 
-        
-        $("#success-outlined").change(() => {
-           if($("#success-outlined").is(":checked")){
-                //alert("checado");
-                let botoes_atualizar = document.getElementsByClassName("atualizar");
+      function configurarElementos(response) {
+        $("#mensagens").html(response);
+        setTimeout(function () {
+          $("#mensagem").css("display", "none");
+        }, 3000);
+        $("#id_nome").text = "";
+        $("#id_ra").prop("value", null);
+        $("#id_nome").focus();
+        $("#success-outlined").prop("checked", true);
+        $("#id_nome").prop("value", "");
+        recarregarTabela();
+      }
 
-                for(let i = 0; i < botoes_atualizar.length; i++){
-                    botoes_atualizar[i].classList.add("disabled");
-                }
-            }
-            else {
-               
-                let botoes_atualizar = document.getElementsByClassName("atualizar");
-                for(let i = 0; i < botoes_atualizar.length; i++){
-                    botoes_atualizar[i].classList.remove("disabled");
+      $("#gravar").click(() => sendGravar());
 
-                     //alert(botoes_atualizar[i].value);
-                     botoes_atualizar[i].addEventListener("click", function(){
-                        
-                        sendAtualizar(botoes_atualizar[i].value);
-                        
-                     });
+      $("#id_nome").keypress((event) => {
+        let tecla = event.which;
+        if (tecla == 13) {
+          sendGravar();
+        }
+      });
+      $("#id_ra").keypress((event) => {
+        let tecla = event.which;
+        if (tecla == 13) {
+          sendGravar();
+        }
+      });
 
-                }
-            }
-            
+      $("#baixarpdf").click(() =>
+        sendBaixarPdf($("#id_rmi").val(), $("#id_rmf").val())
+      );
+      $("#bkp").click(() => sendBkp());
 
-        });
-
-       
-
-
-       
+      $("#id_nome").focus().keydown();
     });
-
-
-</script>
-{% endblock content %}
+  </script>
+  {% endblock content %}
+</div>
