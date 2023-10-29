@@ -27,7 +27,10 @@ https://github.com/rafaelponte89/prj_aluno_rm/assets/75181554/88b89e9a-a049-435c
 ## Terceira versão (não implantada ainda)
 https://github.com/rafaelponte89/prj_aluno_rm/assets/75181554/62bd4cfd-1513-407d-bdb7-9ecbadfc0a24
 
-
+## Observações
+* Os dados na exibição dos vídeos são todos inventados
+* Os vídeos mostram a aplicação rodando localmente não no local de implantação
+  
 ## Contextualização do Projeto
 
 * Os prontuários dos alunos recebem uma numeração sequencial de acordo com o registro na escola. Verificou-se que para efetuar esses registros a escola utilizava-se de cadernos e planilhas eletrônicas, durante uma análise dessas planilhas foi constatada a duplicação de registros, ou seja, o mesmo aluno com números diferentes e portanto com mais de um prontuário. Os registros foram migrados para a base de dados. A aplicação foi construída para evitar duplicação de registros, pois a cada novo registro uma pesquisa já é efetuada, agilizar a localização de prontuários arquivados e gerar relatóros desses registros.
@@ -35,3 +38,4 @@ https://github.com/rafaelponte89/prj_aluno_rm/assets/75181554/62bd4cfd-1513-407d
 ## :hammer: Funcionalidades do Projeto
 
 - `Funcionalidade`: cadastrar, atualizar e pesquisar prontuários e dados de alunos com agilidade, evitar duplicação de registros, resolver duplicações encontradas cancelando um dos registros, gerar relatório desses registros e efetuar backup na nuvem da base de dados.
+  
