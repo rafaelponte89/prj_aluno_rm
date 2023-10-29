@@ -311,7 +311,17 @@ def gravar(request):
                         
     except Exception as err:
         print(err)
+
+def retornar_numeros_telefones(aluno):
+    telefones = Telefone.objects.filter(aluno=aluno)
+    texto_numeros = ""
     
+    for tel in telefones:
+        texto_numeros += "<span class='m-1'>" + tel.numero + "</span>"
+    
+    return texto_numeros
+    
+
 def atualizarTabela(alunos):
     nomes_duplicados = buscar_duplicados(alunos)
     tabela = ''
@@ -345,7 +355,9 @@ def atualizarTabela(alunos):
                         <td class="align-middle text-center">{aluno.serie} </td>
                         <td class="align-middle text-center">{aluno.turma} </td>
                         <td class="align-middle text-center">{aluno.ano} </td>
+                        <td class="align-middle text-center">{retornar_numeros_telefones(aluno)}</td> 
                         <td class="align-middle text-center">{aluno.ra} </td> 
+                        
                         <td class="align-middle text-center conteudoAtualizar">
                             {botao} 
                         </td>
@@ -435,7 +447,7 @@ def buscar_dados_aluno(request):
         dados_telefone += f"""
                    <div class="col-12 form-group d-flex align-items-center"> 
                   <input        
-                    type="text"     
+                    type="number"     
                     class="form-control numTelefone p-2" 
                     id="telefoneAtualizar" 
                     aria-describedby="emailHelp" 
