@@ -17,6 +17,7 @@ O usuário entra com o nome do aluno para efetuar o cadastro, a pesquisa ou a at
 * Microsoft Visual Studio Code
 * DbBrowser para acesso à base de dados 
 * SO (Windows 10)
+* IIS
 
 ## Primeira versão
 https://github.com/rafaelponte89/prj_aluno_rm/assets/75181554/7874b9c8-ed81-499f-b0fc-da09d0725ade
@@ -34,6 +35,9 @@ https://github.com/rafaelponte89/prj_aluno_rm/assets/75181554/62bd4cfd-1513-407d
 ## Contextualização do Projeto
 
 * Os prontuários dos alunos recebem uma numeração sequencial de acordo com o registro na escola. Verificou-se que para efetuar esses registros a escola utilizava-se de cadernos e planilhas eletrônicas, durante uma análise dessas planilhas foi constatada a duplicação de registros, ou seja, o mesmo aluno com números diferentes e portanto com mais de um prontuário. Os registros foram migrados para a base de dados. A aplicação foi construída para evitar duplicação de registros, pois a cada novo registro uma pesquisa já é efetuada, agilizar a localização de prontuários arquivados e gerar relatóros desses registros.
+  
+## Outras Informações
+* A aplicação roda na rede local utilizando o servidor WEB IIS
 
 ## :hammer: Funcionalidades do Projeto
 
