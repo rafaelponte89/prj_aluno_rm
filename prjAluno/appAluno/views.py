@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from .models import Aluno
+from .models import Aluno, Telefone
 from .forms import frmAluno
 from django.contrib import messages
 from django.http import HttpResponse
@@ -26,6 +26,13 @@ from datetime import datetime
 import csv
 from .automatization import login_sed_2, acessar_caminho, buscar_dados
 
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+
+gauth = GoogleAuth()
+#gauth.CommandLineAuth()
+gauth.LocalWebserverAuth()
+drive = GoogleDrive(gauth)
 
 REF_TAMANHO_NOME = 2
 REF_TAMANHO_RA = 7
@@ -42,7 +49,44 @@ def testePadronizaNome():
     alunos = Aluno.objects.all()
     
     padronizar_nomes(alunos)
+    
+# Migrar Serie,Turma,Ano EM DESENVOLVIMENTO
+def migrar_dados_aluno_serie():
+    alunos = Aluno.objects.filter(rm__gte=3520)
+    j = 0
+    acumulador = 0
+    ls_arquivo_csv = []
+    print(len(alunos))
+    with open("serie_turma.csv", "r", encoding="utf-8") as arquivo:
+        arquivo_csv = csv.reader(arquivo, delimiter=",")
+        for i, linha in enumerate(arquivo_csv):  
+            ls_arquivo_csv.append(linha)           
+    
+    print("Arquivo CsvTamanho", len(ls_arquivo_csv))
+    print("Objetos Alunos tamanho", len(alunos))
+    for i in range(len(alunos)):
+        while j < len(ls_arquivo_csv)-1:
+            #print(ls_arquivo_csv[j][3])
+            
+            if ((alunos[i].ra).lstrip().rstrip() == (ls_arquivo_csv[j][3]).lstrip().rstrip()):
+                alunos[i].serie = ls_arquivo_csv[j][0]
+                alunos[i].turma = ls_arquivo_csv[j][1]
+                if (ls_arquivo_csv[j][1] == 'A' or ls_arquivo_csv[j][1] == 'B'):
+                    alunos[i].periodo='M'
+                elif (ls_arquivo_csv[j][1] == 'C' or ls_arquivo_csv[j][1] == 'D' or ls_arquivo_csv[j][1] == 'E'):
+                    alunos[i].periodo= 'T'
+                else:
+                    alunos[i].periodo= ''
 
+                alunos[i].ano = ls_arquivo_csv[j][2]
+                alunos[i].save()
+                acumulador += 1
+                print(alunos[i].nome, alunos[i].ra, alunos[i].serie,
+                      alunos[i].turma, alunos[i].ano)
+    
+            j += 1
+        j = 0
+    print(acumulador)
 # Migração para base de dados
 def migrar_dados_aluno():
     alunos = Aluno.objects.filter(rm__gte=3520)
@@ -92,11 +136,41 @@ def migrar_dados_aluno():
             arquivo.write(nome + '\n')    
         arquivo.write("Nao Migrados: " +  str(nao_migrados_count))
     
+# Converte data do formato dd/mm/aaaa para aaaa-mm-dd
+def converter_data():
+    alunos = Aluno.objects.all()
+    
+    try:    
+        for aluno in alunos:
+            if len(aluno.data_nascimento) > 0:
+                data_nascimento = datetime.strptime(aluno.data_nascimento, "%d/%m/%Y").date()
+                data_convertida = data_nascimento.strftime("%Y-%m-%d")
+                aluno.data_nascimento = data_convertida
+                aluno.save()
+    except:
+        pass
 # Create your views here.
 def criar_log(texto,mensagem):
     with open('log_backup.txt','a') as bkp_log:
         bkp_log.write((datetime.now().strftime('%d/%m/%Y - %H:%M:%S') + ' Status: ' + mensagem + ' Descricao: ' + texto + '\n'))
 
+# backup utilizando pydrive
+def realizar_backup_v2(request):
+    
+    #gauth.LocalWebserverAuth()
+   
+    #gauth.LocalWebserverAuth()
+    arquivo = "db.sqlite3"
+    try:
+        gfile = drive.CreateFile({'parents': [{'id': '1TeRTAGnqX8gkBvFDQovVGtZrvm8GhK0s'}]})
+        gfile.SetContentFile(f"bd/{arquivo}")
+        gfile.Upload()
+    
+        return criarMensagem(f"Backup Efetuado na Nuvem!!! Arquivo: {arquivo}", "info")
+    except(Exception):
+        return criarMensagem(f"Falha no Backup!!!", "danger")
+
+    
 def realizar_backup(request):
     SCOPES =["https://www.googleapis.com/auth/drive"]
     creds = None
@@ -246,32 +320,36 @@ def atualizarTabela(alunos):
     for aluno in alunos:
         nome = aluno.nome.rstrip().lstrip().upper()
         if aluno.cancelado:
-            status_rm = '<tr><td class="align-middle">' + str(aluno.rm) + '</td>'
+            status_rm = '<td class="align-middle">' + str(aluno.rm) + '</td>'
             
             botao = '<button type="button" class="btn btn-outline-danger btn-lg  disabled" aria-label="cancelar'+str(aluno.nome)+  '" value="'+str(aluno.rm)+'"> \
                             <i class="bi bi-x-circle-fill"></i> \
                         </button>' 
         else:
             if nome in nomes_duplicados:
-                status_rm = '<tr><td class="align-middle">' + str(aluno.rm) + \
-                '<button "type="button" class="btn btn-outline-primary m-2 advertencia" value="'+str(aluno.rm)+'" data-bs-toggle="modal" data-bs-target="#resolucaoDuplicidadeModal" ><i class="bi bi-person-fill-exclamation"></i></button></a></td>'
-                botao = '<button type="button" class="btn btn-outline-dark btn-lg atualizar"  value='+str(aluno.rm)+'> \
+                status_rm = '<td class="align-middle">' + str(aluno.rm) + \
+                '<button "type="button" class="btn btn-outline-primary m-2 advertencia" value='+str(aluno.rm)+' data-bs-toggle="modal" data-bs-target="#resolucaoDuplicidadeModal" ><i class="bi bi-person-fill-exclamation"></i></button></a></td>'
+                botao = '<button type="button" class="btn btn-outline-dark btn-lg atualizar"  value='+str(aluno.rm)+' data-bs-toggle="modal" data-bs-target="#atualizarModal"> \
                             <i class="bi bi-arrow-repeat"></i> \
                         </button>'
             else:
-                status_rm = '<tr><td class="align-middle">' + str(aluno.rm) + '</td>'
-                botao = '<button type="button" class="btn btn-outline-dark btn-lg atualizar" aria-label="atualizar'+str(aluno.nome)+'"  value="'+str(aluno.rm)+'"> \
+                status_rm = '<td class="align-middle">' + str(aluno.rm) + '</td>'
+                botao = '<button type="button" class="btn btn-outline-dark btn-lg atualizar" aria-label="atualizar'+str(aluno.nome)+'"  value="'+str(aluno.rm)+'" data-bs-toggle="modal" data-bs-target="#atualizarModal"> \
                             <i class="bi bi-arrow-repeat"></i> \
                         </button>'
                 
                              
             
-        tabela += ' <tr>' + status_rm + \
-                    '<td class="align-middle">'+aluno.nome+'</td> \
-                        <td>' + aluno.ra+  '</td> \
-                        <td class="text-center conteudoAtualizar">' \
-                        +botao+ \
-                    '</td> </tr>'    
+        tabela += f"""<tr> {status_rm}
+                    <td class="align-middle">{aluno.nome}</td> 
+                        <td class="align-middle text-center">{aluno.serie} </td>
+                        <td class="align-middle text-center">{aluno.turma} </td>
+                        <td class="align-middle text-center">{aluno.ano} </td>
+                        <td class="align-middle text-center">{aluno.ra} </td> 
+                        <td class="align-middle text-center conteudoAtualizar">
+                            {botao} 
+                        </td>
+                    </tr>"""    
                     
                     
     #print("Atualizar Tabela", tabela)
@@ -315,7 +393,176 @@ def buscar(request):
             return mensagem
     else:
         return recarregarTabela(request)
+
+def buscar_dados_aluno(request):
+    rm = request.POST.get('rm')
+    print("RM", rm)
+    aluno = Aluno.objects.get(pk=rm)
+    telefone = Telefone()
+  
+    periodos = Aluno.retornarPeriodos()
+    telefones = Telefone.retornarListaTelefones()
+    telefones_aluno = Telefone.objects.filter(aluno=aluno)
+    selecionado = "" 
+   
+    opcoes_periodo = f"<option {selecionado}> Selecione </option>"
+   
+    print("Telefones",telefones_aluno)
+    for i in range(len(periodos)):
+        sigla, periodo = periodos[i]
+        if aluno.periodo == sigla:
+            selecionado = "selected"
+            opcoes_periodo += f"""<option value={sigla} {selecionado}>{periodo}</option>"""
+        else:
+            selecionado = ""
+            opcoes_periodo += f"""<option value='{sigla}' {selecionado}>{periodo}</option>"""
     
+    def retornar_telefone( telefones_aluno):  
+        selecionado_tel = ""     
+        opcoes_telefone = f"<option {selecionado}> Selecione </option>"
+        for i in range(len(telefones)):
+            sigla, contato = telefones[i]
+            if telefones_aluno.contato == sigla:
+                selecionado_tel = "selected"
+                opcoes_telefone += f"""<option value={sigla} {selecionado_tel}>{contato}</option>"""
+            else:
+                selecionado_tel = ""
+                opcoes_telefone += f"""<option value='{sigla}' {selecionado_tel}>{contato}</option>"""
+        return opcoes_telefone
+    
+    dados_telefone = "" 
+    for i in range(len(telefones_aluno)):  
+        dados_telefone += f"""
+                   <div class="col-12 form-group d-flex align-items-center"> 
+                  <input        
+                    type="text"     
+                    class="form-control numTelefone p-2" 
+                    id="telefoneAtualizar" 
+                    aria-describedby="emailHelp" 
+                    placeholder="Telefone" 
+                    value="{telefones_aluno[i].numero}"
+                  /> 
+                      <select class="form-select m-3 contato" aria-label="Default select example" id=periodoAtualizar> 
+                        {retornar_telefone(telefones_aluno[i])}
+                    </select> 
+                   <button type="button" class="btn btn-danger m-1 removerTelefone" value="{telefones_aluno[i].id}">X</button> 
+                </div>"""
+        
+    dados = f"""<form id="cadastroAluno"> 
+            <div class="form-group">
+              <label for="nomeAtualizar">Nome</label>
+              <input
+                type="text"
+                class="form-control"
+                id="nomeAtualizar"
+                aria-describedby="emailHelp"
+                placeholder="Nome"
+                value = "{aluno.nome}"
+              />
+            </div>
+            <div class="row">
+              <div class="col form-group">
+                <label for="raAtualizar">Registro do Aluno (SED)</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="raAtualizar"
+                  aria-describedby="emailHelp"
+                  placeholder="RA"
+                  value = "{aluno.ra}"
+                />
+              </div>
+              <div class="col-3 form-group">
+                <label for="raDigitoAtualizar">Digito RA (SED)</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="raDigitoAtualizar"
+                  aria-describedby="emailHelp"
+                  placeholder="RA Digito"
+                  maxlength = "1"
+                  value = "{aluno.d_ra}"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="nascimentoAtualizar">Data de Nascimento:</label>
+              <input
+                type="date"
+                class="form-control"
+                id="nascimentoAtualizar"
+                aria-describedby="emailHelp"
+                placeholder="Data de Nascimento"
+                value = "{aluno.data_nascimento}"
+              />
+            </div>
+            <div class="row">
+              <div class="col-2 form-group">
+                <label for="serieAtualizar">Série</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="serieAtualizar"
+                  aria-describedby="emailHelp"
+                  value ="{aluno.serie}"
+                />
+              </div>
+              <div class="col-2 form-group">
+                <label for="turmaAtualizar">Turma</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="turmaAtualizar"
+                  aria-describedby="emailHelp"
+                  maxlength="1"
+                  value="{aluno.turma}"
+                />
+              </div>
+              <div class="col form-group">
+                <label for="periodoAtualizar">Periodo</label>
+                    <select class="form-select" aria-label="Default select example" id=periodoAtualizar>
+                        {opcoes_periodo}
+                    </select>
+              </div> 
+              <div class="col form-group">
+                <label for="anoAtualizar">Ano</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="anoAtualizar"
+                  aria-describedby="emailHelp"
+                  placeholder="Ano"
+                  value="{aluno.ano}"
+                />
+              </div>
+            </div>
+             <div class="row">
+               <div class="col-1 form-group d-flex">
+                  <button id="addTelefone" type="button" class="btn btn-primary mt-3">+</button>
+                </div>
+            </div>
+            <div class="row mb-2" id="telefones">
+                   {dados_telefone}
+            </div>
+             
+               <div class="modal-footer">
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+         <button
+              id="simAtualizar"
+              type="button"
+              class="btn btn-primary"
+              data-bs-dismiss="modal"
+              value={aluno.rm}
+            >
+              Atualizar
+            </button>
+      </div>
+           
+          """ 
+    return HttpResponse(dados)  
+
 def buscarRMCancelar(request):
     rm = request.POST.get('rm')
     print("RM", rm)
@@ -323,15 +570,21 @@ def buscarRMCancelar(request):
     dados = f'<div class="col-12"> <p class="text-white bg-dark" > RM: <span id="registroAluno">{aluno.rm} </span> </p> <p class="text-white bg-dark"> Nome: {aluno.nome} </p>  </div>'
     return HttpResponse(dados)
 
+def del_telefone(request):
+    id_tel = request.POST.get('id_tel')
+    telefone = Telefone.objects.get(pk=id_tel)
+    telefone.delete()
+    
+    return HttpResponse("Telefone Excluido")
+    
 # busca aluno por rm
 @csrf_exempt
 def buscarRM(request):
     rm = request.POST.get('rm')
     print("RM", rm)
     aluno = Aluno.objects.get(pk=rm)
-    #dados = f'<div class="col-12"> <p class="text-white bg-dark" > RM: <span id="registroAluno">{aluno.rm} </span> </p> <p class="text-white bg-dark"> Nome: {aluno.nome} </p>  </div>'
-    #form = frmAluno({"nome":aluno.nome,"ra":aluno.ra})
-    dados =  f'<div class="col-sm-6 p-3"> \
+   
+    dados = f'<div class="col-sm-6 p-3"> \
            <div class="input-group"> \
       <div class="input-group-prepend"> \
         <span class="input-group-text bg-dark text-white" id="basic-addon1"><i class="bi bi-search"></i></span>\
@@ -378,26 +631,67 @@ def buscarRM(request):
 def atualizar(request):
     nome = padronizar_nome(request.POST.get("nome").lstrip().rstrip())
     ra = request.POST.get("ra")
+    dra = request.POST.get("dra").upper()
+    dt_nascimento = request.POST.get("dt_nascimento")
+    serie = request.POST.get("serie")
+    turma = request.POST.get("turma")
+    periodo = request.POST.get("periodo")
+    ano = request.POST.get("ano")
+    telefones = request.POST.getlist("telefones[]")
+    contatos = request.POST.getlist("contatos[]")
+    novos_tel = request.POST.getlist("novos_tel[]")
+    print("Telefones", telefones)
+    print("Contatos", contatos)
+    
     tamanho_ra = len(ra)
 
     rm = int(request.POST.get("rm"))
-    
+    print(nome, ra, rm)
     tamanho_nome = len(nome)
     if rm != '':
-        if(tamanho_nome > REF_TAMANHO_NOME):
+        if (tamanho_nome > REF_TAMANHO_NOME):
             #rm = int(request.POST.get("rm"))
             #print(rm)
-            aluno = Aluno.objects.get(pk=rm)
+            aluno = Aluno.objects.get(pk=rm)            
             aluno.nome = nome
+            aluno.d_ra = dra
+            aluno.data_nascimento = dt_nascimento
+            aluno.serie = serie
+            aluno.turma = turma
+            aluno.periodo = periodo
+            aluno.ano = ano
+            
+            # em desenvolvimento
+           
+            print("Novos Tel", novos_tel)
+            
+            for i in range(len(telefones)):
+                if len(novos_tel) > 0:
+                    telefone = Telefone()
+                    if novos_tel[i] == "0":
+                        
+                        telefone.numero = telefones[i]
+                        telefone.contato = contatos[i]
+                        telefone.aluno = aluno
+                        
+                       
+                    else:
+                        telefone = Telefone.objects.get(pk=int(novos_tel[i]))
+                        telefone.numero = telefones[i]
+                        telefone.contato = contatos[i]
+                    telefone.save()
+                
+                
+            ######
             if tamanho_ra > REF_TAMANHO_RA:
                 aluno.ra = ra
-           
+
             aluno.save()
             mensagem = criarMensagem(f"Registro de Aluno Atualizado com Sucesso!!! RM: {rm} - Nome (Atualizado): {nome}","success")
         else:
             if tamanho_ra > REF_TAMANHO_RA:
                 aluno.ra = ra
-            elif(tamanho_nome == 0):
+            elif (tamanho_nome == 0):
                 mensagem = criarMensagem("Nome em Branco!!","warning")
             else:  
                 mensagem = criarMensagem("Nome muito Pequeno!","warning")
@@ -411,43 +705,14 @@ def gerarIntervalo(rm_inicial, rm_final):
     return alunos
   
 def index(request):
-    
-    
+    #migrar_dados_aluno_serie()  
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
    
-   
-    #login_sed_2()
-    #acessar_caminho()
-    #buscar_dados_historico(lista_ra)
-    
-    #aba = driver.find_element(By.XPATH,'//*[@id="aba5"]/a')
-    
-    #aba = driver.find_element(By.ID,'btnConsultarIrmao')
-
-   
-    #aba.click()
-    #driver.execute_script("arguments[0].click(listarMatriculasFichaAluno(false));",aba)
-    #print(aba)
-
-    #driver.implicitly_wait(0.5)
-
-    #driver.execute_script("arguments[0].click();",link_matricula)
-    
-    
-
-    
-    #time.sleep(10)
-
-
-    #print("index",is_ajax)
-    #rodarTeste()
     context = {
             'form': frmAluno(),
         }
-    #testePadronizaNome()
-    #migrar_dados_aluno()
-   
-    return render(request,'index.html', context)
+
+    return render(request, 'index.html', context)
 
 def baixar_pdf(request):
    
@@ -459,7 +724,7 @@ def baixar_pdf(request):
         rmi = rmf
         rmf = maior
     
-    alunos = gerarIntervalo(rmi,rmf)
+    alunos = gerarIntervalo(rmi, rmf)
     elements = []
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, rightMargin=30, leftMargin=50, topMargin=30, bottomMargin=20)
@@ -476,8 +741,6 @@ def baixar_pdf(request):
         else:
             data_alunos.append([Paragraph(f'<para align=center size=12>{alunos[i].rm}</para>',normalStyle), Paragraph(f'<para size=12>{alunos[i].nome}</para>')])
         
-    #print(data_alunos)
-    
     style_table = TableStyle(([('GRID',(0,0),(-1,-1), 0.5, colors.white),
                             ('LEFTPADDING',(0,0),(-1,-1),6),
                             ('TOPPADDING',(0,0),(-1,-1),4),
@@ -490,18 +753,18 @@ def baixar_pdf(request):
                             ('FONTSIZE',(0,0), (-1,-1), 13)
                             ]))
     
-  
-    t_aluno = Table(data_alunos, style= style_table ,hAlign='LEFT', repeatRows=1, colWidths=[60,450])
-    
+    t_aluno = Table(data_alunos, style=style_table, hAlign='LEFT', repeatRows=1, colWidths=[60, 450])
     
     elements.append(t_aluno)
     
     doc.build(elements)
     nome_arquivo = str(rmi) + '_' + str(rmf) + datetime.strftime(datetime.now(),'_%d/%m/%Y_%H_%M_%S')
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename={nome_arquivo}.pdf'
+    
+    response['Content-Disposition'] = (
+        f'attachment; filename={nome_arquivo}.pdf')
+    
     response.write(buffer.getvalue())
     buffer.close()
     
-
     return response
