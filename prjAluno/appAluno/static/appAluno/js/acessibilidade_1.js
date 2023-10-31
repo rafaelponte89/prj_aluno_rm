@@ -4,6 +4,8 @@ function configuracoes(){
     document.getElementById("Conteudo").style.fontSize = atribuirTamanhoFonte("tamanhoLetra") + "%";
  }
 
+
+
 // simplificação do código através das Web APIS do javascript
 // localStorage.setItem("chave","valor") e localStorage.getItem("chave")
 function atribuirTamanhoFonte(nome) {
@@ -34,10 +36,16 @@ function processarTamanhoLetra(limiteFonte, operacao)
 
 }
 
+
 function aumentarLetra(){
-    processarTamanhoLetra("150","+")
+    processarTamanhoLetra("150","+");
 }
 
 function diminuirLetra(){
-    processarTamanhoLetra("80","-")
+    processarTamanhoLetra("80","-");
 }
+
+
+
+
+

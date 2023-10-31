@@ -1,9 +1,9 @@
 {% extends 'base.html' %} {% block content %}
 
 <div class="row">
-  <div id="mensagens" class="col-12"></div>
+  <div id="mensagens" class="col-12 z-3"></div>
 </div>
-<div class="row">
+<div class="row mt-5">
   <div class="col-12">
     <h1 class="text-center">Registro de Alunos</h1>
   </div>
@@ -307,9 +307,11 @@
             });
           }
 
+
           let botoes_atualizar = document.getElementsByClassName("atualizar");
           for (let i = 0; i < botoes_atualizar.length; i++) {
             //alert(botoes_atualizar[i].value);
+           
             botoes_atualizar[i].addEventListener("click", function () {
               //sendAtualizar(botoes_atualizar[i].value);
 
@@ -358,17 +360,14 @@
       let tipoContatos = [];
       let novTelefones = [];
       for (novo of removerTelefone) {
-         novTelefones.push(novo.value);
-        
+        novTelefones.push(novo.value);
       }
       for (tel of telefones) {
         numTelefones.push(tel.value);
-        
       }
 
       for (contato of contatos) {
         tipoContatos.push(contato.value);
-       
       }
 
       $.post({
@@ -509,7 +508,7 @@
           $("#simAtualizar").click(() => {
             sendAtualizar($("#simAtualizar").val());
           });
-            delTelefone();
+          delTelefone();
           //adicionar telefone quando clica no +
           $("#addTelefone").click(() => {
             //alert("ola telefone");
@@ -579,6 +578,10 @@
     $("#bkp").click(() => sendBkp());
 
     $("#id_nome").focus().keydown();
+  });
+
+  $("#tabela").submit(function (e) {
+    e.preventDefault();
   });
 </script>
 {% endblock content %}

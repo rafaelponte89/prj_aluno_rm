@@ -339,12 +339,12 @@ def atualizarTabela(alunos):
             if nome in nomes_duplicados:
                 status_rm = '<td class="align-middle">' + str(aluno.rm) + \
                 '<button "type="button" class="btn btn-outline-primary m-2 advertencia" value='+str(aluno.rm)+' data-bs-toggle="modal" data-bs-target="#resolucaoDuplicidadeModal" ><i class="bi bi-person-fill-exclamation"></i></button></a></td>'
-                botao = '<button type="button" class="btn btn-outline-dark btn-lg atualizar"  value='+str(aluno.rm)+' data-bs-toggle="modal" data-bs-target="#atualizarModal"> \
+                botao = '<button type="button" class="btn btn-outline-success btn-lg atualizar"  value='+str(aluno.rm)+' data-bs-toggle="modal" data-bs-target="#atualizarModal"> \
                             <i class="bi bi-arrow-repeat"></i> \
                         </button>'
             else:
                 status_rm = '<td class="align-middle">' + str(aluno.rm) + '</td>'
-                botao = '<button type="button" class="btn btn-outline-dark btn-lg atualizar" aria-label="atualizar'+str(aluno.nome)+'"  value="'+str(aluno.rm)+'" data-bs-toggle="modal" data-bs-target="#atualizarModal"> \
+                botao = '<button type="button" class="btn btn-outline-success btn-lg atualizar" aria-label="atualizar'+str(aluno.nome)+'"  value="'+str(aluno.rm)+'" data-bs-toggle="modal" data-bs-target="#atualizarModal"> \
                             <i class="bi bi-arrow-repeat"></i> \
                         </button>'
                 
